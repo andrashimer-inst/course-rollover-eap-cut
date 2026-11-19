@@ -26,8 +26,10 @@ import { DATE_ITEMS, INITIAL_DATES, dateCounts } from "./fixDatesData";
 import type { Included } from "./fixDatesData";
 import type { FixDatesState } from "./fixDatesData";
 import LearningObjectReview from "./LearningObjectReview";
-import { buildRows, choiceLabel, choiceOf, hiddenModules, itemIdOf } from "./reviewData";
+import { buildRows, setCutMode, choiceLabel, choiceOf, hiddenModules, itemIdOf } from "./reviewData";
 import StatusPill from "./StatusPill";
+import { FlowSwitch, useFlow } from "./flow";
+import QuickFlow from "./QuickFlow";
 import { CONTENT_TYPES } from "./courseContentData";
 import type { Choice, DupeChoice } from "./reviewData";
 import type { CourseNav } from "./GlobalNav";
@@ -81,11 +83,13 @@ const STEP_INFO: Record<StepId, { name: string; hint: string; lead: string }> =
 // ---- Step indicator -----------------------------------------------------------------------------------------
 function Stepper({
   steps,
+  info,
   current,
   reached,
   onGo,
 }: {
   steps: StepId[];
+  info: typeof STEP_INFO;
   current: number;
   reached: number;
   onGo: (i: number) => void;
@@ -163,10 +167,10 @@ function Stepper({
                 </span>
                 <span style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
                   <Text weight={isCurrent ? "bold" : "normal"}>
-                    {STEP_INFO[id].name}
+                    {info[id].name}
                   </Text>
                   <Text size="small" color="secondary">
-                    {STEP_INFO[id].hint}
+                    {info[id].hint}
                   </Text>
                   <ScreenReaderContent>
                     {done ? "Done" : isCurrent ? "Current step" : ""}
@@ -205,7 +209,10 @@ export default function RolloverWizard({
   onDone,
   draft,
   onSaveLater,
+  quick = false,
 }: {
+  // The quick flow: the whole copy on one page, with no steps.
+  quick?: boolean;
   // The comments for the chosen course. The course is picked in the first step.
   commentsFor: (course: string) => EducatorComment[];
   courseNav: CourseNav;
@@ -235,6 +242,16 @@ export default function RolloverWizard({
   const [scope, setScope] = useState<Scope | null>(draft?.scope ?? "whole");
   const [picked, setPicked] = useState<Picked>(draft?.picked ?? {});
   const [mode, setMode] = useState<CopyMode>(draft?.mode ?? "merge");
+  // The cut flow has no readiness check, so there is no wait after step 2 and no check in step 5.
+  const { cut: flowCut } = useFlow();
+  // The quick flow always has the findings of the cut flow and no readiness check.
+  const cut = quick || flowCut;
+  setCutMode(cut);
+  // Quick flow: one choice for all the findings. true adds them to the to-do list.
+  const [quickToDo, setQuickToDo] = useState(false);
+  const info: typeof STEP_INFO = cut
+    ? { ...STEP_INFO, copy: { name: STEP_INFO.copy.name, hint: "Final preview", lead: "Choose when students see the course and look through the final course. When it looks right, start the copy, and your to-do list comes with the summary." } }
+    : STEP_INFO;
   const [loadingContent, setLoadingContent] = useState(false);
   const [step, setStep] = useState(draft?.step ?? 0);
   const [reached, setReached] = useState(draft?.reached ?? 0);
@@ -248,8 +265,14 @@ export default function RolloverWizard({
   const [dupes, setDupes] = useState<Record<string, DupeChoice>>(draft?.dupes ?? {});
   const rows = useMemo(
     () => buildRows(scope ?? "whole", picked, comments),
-    [scope, picked, comments],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [scope, picked, comments, cut],
   );
+  // Quick flow: one choice covers every finding, so each item with a finding gets it. Nothing is left out.
+  useEffect(() => {
+    if (!quick) return;
+    setChoices(Object.fromEntries(rows.filter((r) => r.hasSuggestion).map((r) => [r.id, quickToDo ? "fix" : "bring"] as [string, Choice])));
+  }, [quick, rows, quickToDo, course]);
   // The learning objects that are copied: the ones chosen in step 2, without the ones left out in step 3. The dates step lists only these.
   const included = useMemo<Included>(() => {
     const eff = withPulledIn(picked);
@@ -358,6 +381,7 @@ export default function RolloverWizard({
         ...buildTodo({ rows, choices, dates, comments, opening, included }),
       ],
       check: checkOf(rows, choices),
+      quick,
       datesShifted: adjustDates ? shifted : 0,
       datesEdited: adjustDates ? edited : 0,
     };
@@ -372,6 +396,7 @@ export default function RolloverWizard({
     courseNav.name,
     course,
     when,
+    quick,
   ]);
 
   // The copy takes a moment. The progress bar moves, then the summary shows.
@@ -504,6 +529,30 @@ export default function RolloverWizard({
     setCopying(true);
   };
 
+  const copyingView = (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: t.space.lg,
+              padding: `${t.space.xxl} 0`,
+            }}
+          >
+            <Heading level="h3" variant="titleCardRegular">
+              Copying content
+            </Heading>
+            <ProgressBar
+              screenReaderLabel="Copying content"
+              valueNow={progress}
+              valueMax={100}
+              renderValue={({ valueNow }) => `${valueNow}%`}
+            />
+            <Text color="secondary">
+              Applying your choices from the review.
+            </Text>
+          </div>
+  );
+
   return (
     <DesktopWrapper
       pageTitle={course ? `Copy content from ${course}` : "Course copy wizard"}
@@ -514,9 +563,11 @@ export default function RolloverWizard({
       course={{ ...courseNav, onSelect: (label) => leave(() => courseNav.onSelect?.(label)) }}
       onNavigate={(label) => leave(() => onNavigate?.(label))}
       onOpenCourse={() => leave()}
+      headerActions={<FlowSwitch />}
+      barActions={<FlowSwitch />}
       // The page buttons sit in the wrapper's actions row, under the page title.
       actions={
-        !loadingContent && !copying ? (
+        !quick && !loadingContent && !copying ? (
           <>
             <Button onClick={undo} interaction={history.length ? "enabled" : "disabled"}>
               Undo
@@ -540,13 +591,39 @@ export default function RolloverWizard({
       fullWidth
     >
       {(id === "review" || id === "dates" || id === "copy") && legacy && <TodoTray open={todoOpen} todo={todoNow} onClose={() => setTodoOpen(false)} />}
+      {quick ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: t.space.xl }}>
+          {copying ? (
+            copyingView
+          ) : (
+            <QuickFlow
+              course={course}
+              onSelectCourse={setCourse}
+              scope={scope}
+              setScope={setScope}
+              picked={picked}
+              setPicked={setPicked}
+              mode={mode}
+              setMode={setMode}
+              rows={rows}
+              toDo={quickToDo}
+              setToDo={setQuickToDo}
+              dates={dates}
+              setDates={setDates}
+              included={included}
+              onCopy={startCopy}
+              onCancel={leave}
+            />
+          )}
+        </div>
+      ) : (
       <div
         style={{ display: "flex", flexDirection: "column", gap: t.space.xl }}
       >
-        <Stepper steps={steps} current={step} reached={reached} onGo={go} />
+        <Stepper steps={steps} info={info} current={step} reached={reached} onGo={go} />
         {/* A short line on what this step is for, on the steps users were unsure about. */}
         {!loadingContent && !copying && (id === "review" || id === "dates" || id === "copy") && (
-          <Text as="p" variant="descriptionPage" color="secondary" margin="0">{STEP_INFO[id].lead}</Text>
+          <Text as="p" variant="descriptionPage" color="secondary" margin="0">{info[id].lead}</Text>
         )}
         {loadingContent ? (
           // The wait after step 2 is the course readiness check, the same as the check in steps 3 and 5.
@@ -561,27 +638,7 @@ export default function RolloverWizard({
             />
           </div>
         ) : copying ? (
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: t.space.lg,
-              padding: `${t.space.xxl} 0`,
-            }}
-          >
-            <Heading level="h3" variant="titleCardRegular">
-              Copying content
-            </Heading>
-            <ProgressBar
-              screenReaderLabel="Copying content"
-              valueNow={progress}
-              valueMax={100}
-              renderValue={({ valueNow }) => `${valueNow}%`}
-            />
-            <Text color="secondary">
-              Applying your choices from the review.
-            </Text>
-          </div>
+          copyingView
         ) : (
           <div
             style={{
@@ -689,7 +746,7 @@ export default function RolloverWizard({
                 <Button
                   color="primary"
                   onClick={() =>
-                    id === "content"
+                    id === "content" && !cut
                       ? setLoadingContent(true)
                       : id === "review" && undecided.length > 0
                         ? (setBringInfo({ count: undecided.length, none: Object.keys(choices).length === 0 }), setConfirmBring(true))
@@ -703,13 +760,14 @@ export default function RolloverWizard({
                       : "enabled"
                   }
                 >
-                  Next: {STEP_INFO[steps[step + 1]].name}
+                  Next: {info[steps[step + 1]].name}
                 </Button>
               )}
             </div>
           </div>
         </div>
       </div>
+      )}
       {/* Closing the window gives the focus back to the button that opened it, which scrolls the page down to it. The next step starts at the top instead. */}
       <Modal open={confirmBring} onDismiss={() => setConfirmBring(false)} size="small" label="Include everything" shouldCloseOnDocumentClick={false} shouldReturnFocus={false} onExited={() => { if (toTopAfterClose.current) window.scrollTo(0, 0); toTopAfterClose.current = false; }}>
         <Modal.Header>

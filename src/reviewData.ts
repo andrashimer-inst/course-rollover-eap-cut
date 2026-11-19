@@ -63,6 +63,13 @@ const KIND_LABEL: Record<TypeId, string> = {
   events: 'Calendar event',
 }
 
+// The cut flow keeps only these findings: unused items, broken and missing links and accessibility. Every other finding comes from the
+// readiness criteria, so it goes away with them, and so do the whole-course rows.
+let cutMode = false
+export const setCutMode = (on: boolean) => { cutMode = on }
+const CUT_KEEPS = new Set(['unused', 'links', 'missing-links', 'a11y-critical', 'a11y-high', 'a11y-medium'])
+const inFlow = <T extends { rule: string }>(list: T[]) => (cutMode ? list.filter((h) => CUT_KEEPS.has(h.rule)) : list)
+
 // Where the check found something, by item id. The detail is why this item was flagged.
 const HITS: Record<string, { rule: string; detail: string }[]> = {
   'assignments:1': [{ rule: 'links', detail: '1 link in the instructions points to the previous course and shows an error.' }],
@@ -110,7 +117,7 @@ const HITS: Record<string, { rule: string; detail: string }[]> = {
 const rule = (id: string) => DESIGN_RULES.find((r) => r.id === id)!
 
 // What the check found on one item, for the preview window of the item.
-export const findingsOf = (itemId?: string): Finding[] => (itemId ? (HITS[itemId] ?? []).map((h) => ({ rule: rule(h.rule), detail: h.detail })) : [])
+export const findingsOf = (itemId?: string): Finding[] => (itemId ? inFlow(HITS[itemId] ?? []).map((h) => ({ rule: rule(h.rule), detail: h.detail })) : [])
 
 const sameItem = (comment: string, title: string) => comment === title || comment.endsWith(` ${title}`)
 
@@ -127,7 +134,7 @@ export function buildRows(scope: Scope, picked: Picked, comments: EducatorCommen
     const items = type.id === 'modules' ? type.items.filter((m) => HITS[m.id]) : type.items.length ? type.items : [{ id: type.id, label: type.label }]
     for (const item of items) {
       if (scope === 'part' && !eff[item.id]) continue
-      const all = (HITS[item.id] ?? []).map((h) => ({ rule: rule(h.rule), detail: h.detail }))
+      const all = inFlow(HITS[item.id] ?? []).map((h) => ({ rule: rule(h.rule), detail: h.detail }))
       const note = comments.find((c) => sameItem(c.item, item.label))
       // An item with several findings gets a row for each, so every finding has its own choice. The item is listed again for each one.
       const parts = all.length > 1 ? all.map((f) => [f]) : [all]
@@ -150,7 +157,7 @@ export function buildRows(scope: Scope, picked: Picked, comments: EducatorCommen
       })
     }
   }
-  rows.push(...COURSE_ROWS.map((c) => courseRow(c)))
+  if (!cutMode) rows.push(...COURSE_ROWS.map((c) => courseRow(c)))
   // Group order: the whole course first, then modules in course order, then the rest in the order they were found.
   const order = ['Whole course', ...modules.map((m) => m.label), 'Course']
   const rank = (g: string) => (order.includes(g) ? order.indexOf(g) : order.length)

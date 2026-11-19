@@ -7,6 +7,7 @@ import Pager from './Pager'
 import ReadinessResults from './ReadinessResults'
 import ReadinessLoading from './ReadinessLoading'
 import { CRITERIA_NAME } from './CriteriaModal'
+import { useFlow } from './flow'
 import FigmaAlert from './FigmaAlert'
 import StatusPill from './StatusPill'
 import { PEOPLE } from './copyHistory'
@@ -60,6 +61,9 @@ export function SummaryView({
   const [typeFilter, setTypeFilter] = useState('all')
   const [personFilter, setPersonFilter] = useState('all')
   const [tab, setTab] = useState(0)
+  // The cut flow has no readiness check, so the summary has no Course check tab.
+  const { cut: flowCut } = useFlow()
+  const cut = flowCut || !!summary.quick
   // The check can be run again here. It goes through the areas, then shows the result again.
   const [checking, setChecking] = useState(false)
   const [query, setQuery] = useState('')
@@ -219,7 +223,7 @@ export function SummaryView({
               </ul>
             </section>
           </Tabs.Panel>
-          <Tabs.Panel id="tab-check" renderTitle="Course check" isSelected={tab === 1} padding="general.spaceXl 0 0 0">
+          {!cut && <Tabs.Panel id="tab-check" renderTitle="Course check" isSelected={tab === 1} padding="general.spaceXl 0 0 0">
             <section aria-label="Course check" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -243,8 +247,8 @@ export function SummaryView({
                 <ReadinessResults groups={summary.check} />
               )}
             </section>
-          </Tabs.Panel>
-          <Tabs.Panel id="tab-todo" renderTitle={`To-do list (${todoAll.length})`} isSelected={tab === 2} padding="general.spaceXl 0 0 0">
+          </Tabs.Panel>}
+          <Tabs.Panel id="tab-todo" renderTitle={`To-do list (${todoAll.length})`} isSelected={tab === (cut ? 1 : 2)} padding="general.spaceXl 0 0 0">
             <section aria-label="To-do list" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -313,7 +317,7 @@ export function SummaryView({
               </Table>
             </section>
           </Tabs.Panel>
-          <Tabs.Panel id="tab-history" renderTitle={`Copy history (${summary.history.length})`} isSelected={tab === 3} padding="general.spaceXl 0 0 0">
+          <Tabs.Panel id="tab-history" renderTitle={`Copy history (${summary.history.length})`} isSelected={tab === (cut ? 2 : 3)} padding="general.spaceXl 0 0 0">
       <section aria-labelledby="history" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
           <Text as="div" weight="bold" size="large" id="history">Copy history</Text>

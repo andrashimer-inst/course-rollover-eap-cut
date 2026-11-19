@@ -28,6 +28,7 @@ import AdminHelpModal from './AdminHelpModal'
 import type { TodoItem } from './rolloverData'
 import CoursePreviewModal from './CoursePreviewModal'
 import CriteriaModal from './CriteriaModal'
+import { useFlow } from './flow'
 import { CONTENT_TYPES, MODULE_ENTRIES } from './courseContentData'
 import type { Picked, Scope, CopyMode } from './contentHelpers'
 import { CHOICES, CHOICE_LABEL, NOTE_LABEL, RULE_LABEL, choiceLabel, choiceOf, hiddenModules, itemIdOf } from './reviewData'
@@ -79,6 +80,8 @@ export default function LearningObjectReview({
 
   const done = (r: ReviewRow) => choiceOf(r, choices) !== undefined
   const [tab, setTab] = useState(0)
+  // The cut flow has no criteria and no readiness check, and no general items (they all come from the criteria).
+  const { cut } = useFlow()
   const [checking, setChecking] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [criteriaOpen, setCriteriaOpen] = useState(false)
@@ -423,8 +426,8 @@ export default function LearningObjectReview({
       {/* The check, preview, message and to-do buttons at the end of the row, under the tabs. */}
       <div style={{ marginInlineStart: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.md }}>
         {/* Check acts on the findings, so it stands apart from the buttons that only open something. */}
-        <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>
-        <span aria-hidden="true" style={{ alignSelf: 'stretch', width: t.borderWidth, minHeight: '2rem', background: t.textColor }} />
+        {!cut && <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>}
+        {!cut && <span aria-hidden="true" style={{ alignSelf: 'stretch', width: t.borderWidth, minHeight: '2rem', background: t.textColor }} />}
         <Button renderIcon={<IconEyeLine />} onClick={() => setPreviewOpen(true)}>Course preview</Button>
         <Button renderIcon={<IconEmailLine />} onClick={() => setHelpOpen(true)}>Ask for help</Button>
         <Button renderIcon={<IconAssignmentLine />} onClick={onToggleTodo}>To-do list ({todo.length})</Button>
@@ -524,18 +527,18 @@ export default function LearningObjectReview({
           )}
           </div>
         </Tabs.Panel>
-        <Tabs.Panel id="tab-course" renderTitle={`General items (${generalLeft})`} isSelected={tab === 2} padding="general.spaceMd 0 0 0">
+        {!cut && <Tabs.Panel id="tab-course" renderTitle={`General items (${generalLeft})`} isSelected={tab === 2} padding="general.spaceMd 0 0 0">
           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
             {filterRow(wholeRows)}
             {bulkBar('Bulk actions')}
           {wholeRows.length > 0 ? filtered(wholeRows).length > 0 ? reviewTable(filtered(wholeRows), 'Issues that affect the whole course', 'General items') : <Text as="p">No items match this filter.</Text> : <Text as="p">No items to review.</Text>}
           </div>
-        </Tabs.Panel>
+        </Tabs.Panel>}
       </Tabs>
       </>)}
       {/* The course as it will look after the copy, with the choice made for each item. */}
       <CoursePreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} source={{ moduleIds, keepCurrent: merging, hidden: hiddenModules(dupes), scope, picked }} noteFor={previewNote} leftOut={(id) => rows.some((r) => itemIdOf(r) === id && choiceOf(r, choices) === 'leave')} />
-      <CriteriaModal open={criteriaOpen} onClose={() => setCriteriaOpen(false)} onRunCheck={() => setChecking(true)} running={checking} results={Object.fromEntries(readiness(rows, choices).map((x) => [x.rule.id, x.status]))} />
+      {!cut && <CriteriaModal open={criteriaOpen} onClose={() => setCriteriaOpen(false)} onRunCheck={() => setChecking(true)} running={checking} results={Object.fromEntries(readiness(rows, choices).map((x) => [x.rule.id, x.status]))} />}
       <AdminHelpModal open={helpOpen} items={(rows.filter((r) => r.hasSuggestion && !done(r)).length ? rows.filter((r) => r.hasSuggestion && !done(r)) : rows.filter((r) => r.hasSuggestion)).map((r) => ({ title: r.title, detail: r.findings.map((f) => f.detail).join(' ') || r.note?.text || '' }))} onClose={() => setHelpOpen(false)} onSend={() => { setMessageSent(true); onHelpSent() }} />
     </div>
   )

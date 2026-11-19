@@ -7,6 +7,7 @@ import ThemeSwitcher from './ThemeSwitcher'
 import { AppThemeContext, THEMES } from './appTheme'
 import type { ThemeKey } from './appTheme'
 import { useNotes } from './useNotes'
+import { FlowProvider } from './flow'
 
 // Two flows in one prototype. Clicking Account in the global nav switches between them.
 //   Course Rollover flow   rollover      Settings > Import Content, with the copy wizard
@@ -35,6 +36,7 @@ export default function App() {
   }
 
   return (
+    <FlowProvider>
     <AppThemeContext.Provider value={themeKey}>
       <InstUISettingsProvider theme={THEMES[themeKey]}>
         {screen === 'rollover' && <CourseRollover notes={api.notes} onNavigate={onNavigate} />}
@@ -74,5 +76,6 @@ export default function App() {
         <ThemeSwitcher themeKey={themeKey} onChange={setThemeKey} />
       </InstUISettingsProvider>
     </AppThemeContext.Provider>
+    </FlowProvider>
   )
 }

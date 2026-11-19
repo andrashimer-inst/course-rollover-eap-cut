@@ -223,6 +223,8 @@ export type CopySummary = {
   todo: TodoItem[]
   history: HistoryEvent[]
   // The course readiness check as it stood when the course was copied, by area.
+  // Made by the quick flow, which has no readiness check, so the summary has no Course check tab.
+  quick?: boolean
   check: { dimension: string; rules: { title: string; status: 'pass' | 'fixed' | 'later' | 'open'; note: string }[] }[]
   datesShifted: number
   datesEdited: number

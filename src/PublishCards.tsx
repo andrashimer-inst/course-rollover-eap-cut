@@ -1,5 +1,6 @@
 import { Checkbox, DateInput, SimpleSelect, Text } from '@instructure/ui/v11_7'
 import RadioWithContent from './RadioWithContent'
+import { useFlow } from './flow'
 import type { Opening } from './reviewCopyData'
 import { useAppThemeKey, useSurfaceTokens } from './appTheme'
 
@@ -17,6 +18,8 @@ const TIMES = Array.from({ length: 48 }, (_, i) => {
 
 export default function PublishCards({ opening, setOpening }: { opening: Opening; setOpening: (o: Opening) => void }) {
   const t = useSurfaceTokens()
+  // The hold depends on the readiness check, which the cut flow does not have.
+  const { cut } = useFlow()
   // Legacy is flat: the publishing options sit on the page, not in a card.
   const card = useAppThemeKey() !== 'legacy'
   return (
@@ -80,11 +83,11 @@ export default function PublishCards({ opening, setOpening }: { opening: Opening
                   </div>
                 </div>
                 {/* Only a scheduled publish can be held, so a manual publish has no checkbox. */}
-                <Checkbox
+                {!cut && <Checkbox
                   label="Hold publishing if a required readiness check still fails at the scheduled time"
                   checked={opening.hold}
                   onChange={() => setOpening({ ...opening, hold: !opening.hold })}
-                />
+                />}
               </>
             ),
           },

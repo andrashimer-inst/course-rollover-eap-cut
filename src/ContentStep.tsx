@@ -327,8 +327,11 @@ const KIND_ICON: Record<ModuleEntry['kind'], ReactNode> = {
 
 
 export default function ContentStep({
-  scope, setScope, picked: chosen, setPicked, mode, setMode, hidden,
+  scope, setScope, picked: chosen, setPicked, mode, setMode, hidden, bare = false, noPreview = false,
 }: {
+  // Inside a card of the quick flow: no cards of its own, and no preview.
+  bare?: boolean
+  noPreview?: boolean
   scope: Scope | null
   setScope: (s: Scope) => void
   picked: Picked
@@ -339,7 +342,7 @@ export default function ContentStep({
 }) {
   const t = useSurfaceTokens()
   // Legacy is flat: the sections stand apart by white space, not by cards.
-  const legacy = useAppThemeKey() === 'legacy'
+  const legacy = useAppThemeKey() === 'legacy' || bare
   const sectionGap = legacy ? t.space.xxl : t.space.xl
   // The item of the preview that was clicked. It opens in a window.
   const [openItem, setOpenItem] = useState<PreviewItem | null>(null)
@@ -381,7 +384,8 @@ export default function ContentStep({
         gap: t.space.md,
       }}
     >
-      <Text weight="bold" size="large">Content to copy</Text>
+      {/* In the quick flow the card already has the title, so only the "Copy" label is left. */}
+      {!bare && <Text weight="bold" size="large">Content to copy</Text>}
       <RadioWithContent
         name="content-scope"
         legend="Copy"
@@ -449,7 +453,7 @@ export default function ContentStep({
             }}
           >
             <div style={{ marginBottom: t.space.md, display: 'flex', flexDirection: 'column', gap: t.space.xs }}>
-              <Text weight="bold" size="large">Choose the learning objects to copy</Text>
+              <Text weight="bold" size={bare ? 'medium' : 'large'}>Choose the learning objects to copy</Text>
               {/* The same count as the first card in step 3: modules hold items, so they are not counted themselves. */}
               <Text as="div" color="secondary" aria-live="polite">{itemCount} {itemCount === 1 ? 'item' : 'items'} in the copy</Text>
             </div>
@@ -527,7 +531,7 @@ export default function ContentStep({
         </div>
       )}
 
-      {scope && (
+      {scope && !noPreview && (
         <div style={{ flex: '1 1 24rem', minWidth: 0 }}>
           {/* Two ways to look at the same copy, chosen with the dropdown inside the card: by module, or by learning object. */}
           {previewTab === 0 ? (

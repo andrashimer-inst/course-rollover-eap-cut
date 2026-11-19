@@ -8,8 +8,11 @@ import {
   Heading,
   IconButton,
   Link,
+  ListChecksInstUIIcon,
   Modal,
+  RadioInput,
   ScreenReaderContent,
+  ZapInstUIIcon,
   SimpleSelect,
   Table,
   Text,
@@ -28,6 +31,7 @@ import { PREVIOUS_IMPORTS, UNDO_BLOCKED, newImport } from './sampleImports'
 import type { ImportRow } from './sampleImports'
 import { commentsForCopy } from './notebookData'
 import type { Note } from './notebookData'
+import { FlowSwitch } from './flow'
 
 // Course Rollover: "Import Content" page, built on the template. Figma decides the design, the package
 // decides what exists, new-theme (v2) components only, spacing from docs/spacing.md.
@@ -72,6 +76,10 @@ export default function CourseRollover({
   const adjustDates = true
   const [imports, setImports] = useState<ImportRow[]>(() => [...PREVIOUS_IMPORTS])
   const [wizardOpen, setWizardOpen] = useState(false)
+  // Which flow the copy starts with: asked in a window when the copy starts. The quick flow is one page, the other has steps.
+  const [quick, setQuick] = useState(false)
+  const [flowAsk, setFlowAsk] = useState(false)
+  const [flowPick, setFlowPick] = useState<'quick' | 'steps'>('quick')
   // A copy saved with "Save and continue later". It is picked up again on the step it was left on.
   const [draft, setDraft] = useState<(WizardDraft & { savedAt: Date }) | null>(null)
   const [resume, setResume] = useState(false)
@@ -113,6 +121,7 @@ export default function CourseRollover({
           handleDone(summary)
         }}
         draft={resume ? draft : null}
+        quick={quick}
         onSaveLater={(d) => {
           setDraft({ ...d, savedAt: new Date() })
           setResume(false)
@@ -136,6 +145,8 @@ export default function CourseRollover({
         activeNav="Courses"
         course={COURSE}
         onNavigate={onNavigate}
+        headerActions={<FlowSwitch />}
+        barActions={<FlowSwitch />}
         // The two actions sit under the page title, like the buttons of the wizard steps.
         actions={
           s ? (
@@ -200,6 +211,8 @@ export default function CourseRollover({
       // column beside the content (Legacy).
       course={COURSE}
       onNavigate={onNavigate}
+      headerActions={<FlowSwitch />}
+      barActions={<FlowSwitch />}
       description={DESCRIPTION}
       fullWidth
     >
@@ -234,7 +247,7 @@ export default function CourseRollover({
 
               {isCourseCopy && (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <Button color="primary" onClick={() => { setResume(draft !== null); setWizardOpen(true) }}>
+                  <Button color="primary" onClick={() => { if (draft) { setResume(true); setQuick(false); setWizardOpen(true) } else setFlowAsk(true) }}>
                     {draft ? 'Continue copy' : 'Course copy wizard'}
                   </Button>
                   {draft && <Button onClick={() => setDraft(null)}>Discard saved copy</Button>}
@@ -294,6 +307,65 @@ export default function CourseRollover({
             </section>
       </Flex>
 
+      {/* The copy starts with a choice of flow: the quick flow is one page with cards, the other goes through the steps. */}
+      <Modal open={flowAsk} onDismiss={() => setFlowAsk(false)} size="small" label="Choose a flow" shouldCloseOnDocumentClick={false}>
+        <Modal.Header>
+          <CloseButton placement="end" offset="small" onClick={() => setFlowAsk(false)} screenReaderLabel="Close" />
+          <Heading level="h2">How do you want to copy?</Heading>
+        </Modal.Header>
+        <Modal.Body>
+          {/* The two flows as cards under each other. Each has a radio button, an icon, a name and what it is for. The whole card picks it. */}
+          <div role="radiogroup" aria-label="How do you want to copy?" style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
+            {([
+              { value: 'quick', icon: <ZapInstUIIcon />, title: 'Quick flow', text: 'One page: choose the course and content, decide what happens with the findings and the dates, then copy.' },
+              { value: 'steps', icon: <ListChecksInstUIIcon />, title: 'Step by step', text: 'Go through the review of each item, the dates and a preview of the course before the copy.' },
+            ] as const).map((o) => {
+              const on = flowPick === o.value
+              return (
+                <div
+                  key={o.value}
+                  onClick={() => setFlowPick(o.value)}
+                  style={{
+                    display: 'flex',
+                    gap: t.space.md,
+                    alignItems: 'flex-start',
+                    padding: t.space.lg,
+                    borderRadius: t.radiusCardMd,
+                    cursor: 'pointer',
+                    background: on ? `color-mix(in srgb, ${t.linkColor} 8%, ${t.containerColor})` : t.containerColor,
+                    border: `${on ? '0.125rem' : t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                  }}
+                >
+                  <div style={{ flex: '0 0 1.5rem', width: '1.5rem', paddingBlockStart: '0.125rem' }}>
+                    <RadioInput size="small" name="copy-flow" value={o.value} checked={on} onChange={() => setFlowPick(o.value)} label={<ScreenReaderContent>{o.title}</ScreenReaderContent>} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.xs, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm, fontSize: '1.25rem', color: t.textColor }}>
+                      <span aria-hidden="true" style={{ display: 'inline-flex' }}>{o.icon}</span>
+                      <Text weight="bold">{o.title}</Text>
+                    </div>
+                    <Text as="div" color="secondary">{o.text}</Text>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={() => setFlowAsk(false)} margin="0 small 0 0">Cancel</Button>
+          <Button
+            color="primary"
+            onClick={() => {
+              setFlowAsk(false)
+              setQuick(flowPick === 'quick')
+              setResume(false)
+              setWizardOpen(true)
+            }}
+          >
+            Start
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </DesktopWrapper>
   )
 }

@@ -6,6 +6,7 @@ import ReadinessLoading from './ReadinessLoading'
 import { CoursePreview, ItemPreviewModal, ObjectsPreview } from './ContentStep'
 import type { PreviewItem } from './ContentStep'
 import CriteriaModal from './CriteriaModal'
+import { useFlow } from './flow'
 import PublishCards from './PublishCards'
 import { dateMetaFor, dateNoteFor } from './dateNote'
 import { CONTENT_TYPES } from './courseContentData'
@@ -46,6 +47,8 @@ export default function ReviewAndCopyStep({
   onToggleTodo: () => void
 }) {
   const t = useSurfaceTokens()
+  // The cut flow has no criteria and no readiness check.
+  const { cut } = useFlow()
   const card = useAppThemeKey() !== 'legacy'
   const cardStyle = card
     ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg }
@@ -67,7 +70,7 @@ export default function ReviewAndCopyStep({
 
   // The check starts by itself when the step opens, unless it already ran.
   useEffect(() => {
-    if (!readyRan) run()
+    if (!readyRan && !cut) run()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -104,11 +107,11 @@ export default function ReviewAndCopyStep({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
             <Text as="div" weight="bold" size="large">Course preview</Text>
-            <Text as="div" color="secondary">The course as it will look after the copy, with your choices, the dates and the readiness check.</Text>
+            <Text as="div" color="secondary">{cut ? 'The course as it will look after the copy, with your choices and the dates.' : 'The course as it will look after the copy, with your choices, the dates and the readiness check.'}</Text>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.md }}>
-            <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>
-            <span aria-hidden="true" style={{ alignSelf: 'stretch', width: t.borderWidth, minHeight: '2rem', background: t.textColor }} />
+            {!cut && <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>}
+            {!cut && <span aria-hidden="true" style={{ alignSelf: 'stretch', width: t.borderWidth, minHeight: '2rem', background: t.textColor }} />}
             <Button renderIcon={<IconAssignmentLine />} onClick={onToggleTodo}>To-do list ({todoCount})</Button>
           </div>
         </div>
@@ -127,7 +130,7 @@ export default function ReviewAndCopyStep({
           )}
         </div>
       </div>
-      <CriteriaModal open={criteriaOpen} onClose={() => setCriteriaOpen(false)} onRunCheck={run} running={running} results={Object.fromEntries(readiness(rows, choices).map((x) => [x.rule.id, x.status]))} />
+      {!cut && <CriteriaModal open={criteriaOpen} onClose={() => setCriteriaOpen(false)} onRunCheck={run} running={running} results={Object.fromEntries(readiness(rows, choices).map((x) => [x.rule.id, x.status]))} />}
       <ItemPreviewModal item={openItem} onClose={() => setOpenItem(null)} />
     </div>
   )

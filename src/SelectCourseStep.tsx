@@ -26,10 +26,12 @@ const TEACHER_OPTIONS = [{ id: ANY, label: 'Anyone' }, ...TEACHERS.map((n) => ({
 
 const SUB_ACCOUNT_OPTIONS = [{ id: ANY, label: 'All sub-accounts' }, ...SUB_ACCOUNTS.map((n) => ({ id: n, label: n }))]
 
-export default function SelectCourseStep({ selected, onSelect }: { selected: string; onSelect: (name: string) => void }) {
+export default function SelectCourseStep({ selected, onSelect, bare = false }: { selected: string; onSelect: (name: string) => void; bare?: boolean }) {
   const t = useSurfaceTokens()
   // Light and Dark put the table on a card. Legacy stays flat on the page.
-  const card = useAppThemeKey() !== 'legacy'
+  // Inside a card of the quick flow the table has no card of its own.
+  const themed = useAppThemeKey() !== 'legacy'
+  const card = themed && !bare
   const [query, setQuery] = useState('')
   const [taught, setTaught] = useState('You')
   const [subAccount, setSubAccount] = useState(SUB_ACCOUNTS[3])
@@ -147,7 +149,7 @@ export default function SelectCourseStep({ selected, onSelect }: { selected: str
         >
           {/* The list scrolls inside the card. The header row stays in view while it does. */}
           <style>{`
-            .course-scroll thead th { position: sticky; top: 0; z-index: 10; background: ${card ? t.containerColor : t.pageColor}; box-shadow: inset 0 -${t.borderWidth} 0 ${t.borderColor}; }
+            .course-scroll thead th { position: sticky; top: 0; z-index: 10; background: ${themed ? t.containerColor : t.pageColor}; box-shadow: inset 0 -${t.borderWidth} 0 ${t.borderColor}; }
             .course-scroll table { table-layout: fixed; width: 100%; }
             .course-scroll th:first-child, .course-scroll td:first-child { width: 2.75rem; padding-inline-end: 0; }
             .course-scroll tbody tr { cursor: pointer; }

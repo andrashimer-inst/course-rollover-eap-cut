@@ -1,4 +1,4 @@
-# Builds the prototype and publishes it to GitHub Pages on every push to main.
+# Builds the prototype and publishes it to GitHub Pages on every push to main (this copy is the feature-cut preview).
 name: Publish prototype
 
 on:
@@ -28,7 +28,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vite build --base=/course-rollover-eap/
+      - run: npx vite build --base=/course-rollover-eap-cut/
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
