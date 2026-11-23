@@ -11,7 +11,7 @@ import { useFlow } from './flow'
 import FigmaAlert from './FigmaAlert'
 import StatusPill from './StatusPill'
 import { PEOPLE } from './copyHistory'
-import { TODO_GROUPS, exportTodo, failedTodo, groupTodo, tagOf } from './reviewCopyData'
+import { GLOBAL_CRITERIA_NOTE, TODO_GROUPS, exportTodo, failedTodo, groupTodo, tagOf } from './reviewCopyData'
 import type { CopySummary, HistoryEvent } from './rolloverData'
 import { useAppThemeKey, useSurfaceTokens } from './appTheme'
 
@@ -156,6 +156,12 @@ export function SummaryView({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.xl }}>
       <section aria-labelledby="set-up" style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
+        {/* When students see the course: scheduled to publish on a day, or unpublished until you publish it. It sits under the buttons, above the cards. */}
+        {!undone && (
+          <FigmaAlert variant="info" type="inline">
+            {summary.opens}
+          </FigmaAlert>
+        )}
         {!undone && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(10rem, 1fr))', gap: t.space.lg }}>
             {[
@@ -189,66 +195,8 @@ export function SummaryView({
 
       {!undone ? (
         <Tabs onRequestTabChange={(_e, { index }) => setTab(index)}>
-          <Tabs.Panel id="tab-not-copied" renderTitle={`Not copied (${notCopied.length})`} isSelected={tab === 0} padding="general.spaceXl 0 0 0">
-            <section aria-label="Not copied" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
-                  <Text as="div" weight="bold" size="large">Not copied</Text>
-                  <Text as="div" color="secondary">
-                    {notCopied.length === 0
-                      ? 'Everything you chose was copied.'
-                      : 'These items were not copied. Items that failed are on your to-do list so you can fix them.'}
-                  </Text>
-                </div>
-                {/* The source course opens in a new tab, which is not part of this prototype. */}
-                <Button renderIcon={<IconExternalLinkLine />} onClick={showToast}>Open source course</Button>
-              </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                {notCopied.map((n) => (
-                  <li key={n.item} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: t.space.md, padding: `${t.space.md} 0`, borderTop: `${t.borderWidth} solid ${t.borderColor}` }}>
-                    <span style={{ flex: '1 1 18rem', minWidth: 0 }}>
-                      <Text as="div" weight="bold">{n.item}</Text>
-                      <Text as="div" color="secondary">{n.reason}</Text>
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: t.space.md }}>
-                      {n.canBring && (
-                        <Link as="button" onClick={() => setBrought([...brought, n.item])}>
-                          Copy it now<ScreenReaderContent>: {n.item}</ScreenReaderContent>
-                        </Link>
-                      )}
-                      <StatusPill size="sm" color={NOT_COPIED_PILL[n.kind].color}>{NOT_COPIED_PILL[n.kind].label}</StatusPill>
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </Tabs.Panel>
-          {!cut && <Tabs.Panel id="tab-check" renderTitle="Course check" isSelected={tab === 1} padding="general.spaceXl 0 0 0">
-            <section aria-label="Course check" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
-                  <Text as="div" weight="bold" size="large">Course readiness check</Text>
-                  <Text as="div" color="secondary">How the course stood against the readiness criteria of your account, and the checks of the copy (links, unused items and dates).</Text>
-                </div>
-                <Button renderIcon={<IconAnalyticsLine />} interaction={checking ? 'disabled' : 'enabled'} onClick={() => setChecking(true)}>
-                  {checking ? 'Checking…' : 'Run check'}
-                </Button>
-              </div>
-              {/* The name of the criteria the check ran against. The loading screen shows it itself. */}
-              {!checking && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.xs }}>
-                  <Text as="div" size="small" color="secondary">Criteria</Text>
-                  <Text as="div" weight="bold">{CRITERIA_NAME}</Text>
-                </div>
-              )}
-              {checking ? (
-                <ReadinessLoading areas={summary.check.map((g) => g.dimension)} onDone={() => setChecking(false)} />
-              ) : (
-                <ReadinessResults groups={summary.check} />
-              )}
-            </section>
-          </Tabs.Panel>}
-          <Tabs.Panel id="tab-todo" renderTitle={`To-do list (${todoAll.length})`} isSelected={tab === (cut ? 1 : 2)} padding="general.spaceXl 0 0 0">
+          {/* The to-do list is the first tab: it is what you do next. */}
+          <Tabs.Panel id="tab-todo" renderTitle={`To-do list (${todoAll.length})`} isSelected={tab === 0} padding="general.spaceXl 0 0 0">
             <section aria-label="To-do list" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -256,7 +204,7 @@ export function SummaryView({
                   <Text as="div" color="secondary">Actions that still need your attention after the copy. Download the list to keep it.</Text>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.sm }}>
-                  <Button renderIcon={<IconEmailLine />} onClick={() => setHelpOpen(true)}>Email the list</Button>
+                  <Button renderIcon={<IconEmailLine />} onClick={() => setHelpOpen(true)}>Send a message</Button>
                   <Button renderIcon={<IconDownloadLine />} onClick={() => exportTodo(todoAll, summary.course)}>
                     Download to-do list
                   </Button>
@@ -315,8 +263,69 @@ export function SummaryView({
                   })}
                 </Table.Body>
               </Table>
+              {/* The last line of the list. It is in the download and in the message too. */}
+              <Text as="div" color="secondary">{GLOBAL_CRITERIA_NOTE}</Text>
             </section>
           </Tabs.Panel>
+          <Tabs.Panel id="tab-not-copied" renderTitle={`Not copied (${notCopied.length})`} isSelected={tab === 1} padding="general.spaceXl 0 0 0">
+            <section aria-label="Not copied" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+                  <Text as="div" weight="bold" size="large">Not copied</Text>
+                  <Text as="div" color="secondary">
+                    {notCopied.length === 0
+                      ? 'Everything you chose was copied.'
+                      : 'These items were not copied. Items that failed are on your to-do list so you can fix them.'}
+                  </Text>
+                </div>
+                {/* The source course opens in a new tab, which is not part of this prototype. */}
+                <Button renderIcon={<IconExternalLinkLine />} onClick={showToast}>Open source course</Button>
+              </div>
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+                {notCopied.map((n) => (
+                  <li key={n.item} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: t.space.md, padding: `${t.space.md} 0`, borderTop: `${t.borderWidth} solid ${t.borderColor}` }}>
+                    <span style={{ flex: '1 1 18rem', minWidth: 0 }}>
+                      <Text as="div" weight="bold">{n.item}</Text>
+                      <Text as="div" color="secondary">{n.reason}</Text>
+                    </span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: t.space.md }}>
+                      {n.canBring && (
+                        <Link as="button" onClick={() => setBrought([...brought, n.item])}>
+                          Copy it now<ScreenReaderContent>: {n.item}</ScreenReaderContent>
+                        </Link>
+                      )}
+                      <StatusPill size="sm" color={NOT_COPIED_PILL[n.kind].color}>{NOT_COPIED_PILL[n.kind].label}</StatusPill>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </Tabs.Panel>
+          {!cut && <Tabs.Panel id="tab-check" renderTitle="Course check" isSelected={tab === 2} padding="general.spaceXl 0 0 0">
+            <section aria-label="Course check" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+                  <Text as="div" weight="bold" size="large">Course readiness check</Text>
+                  <Text as="div" color="secondary">How the course stood against the readiness criteria of your account, and the checks of the copy (links, unused items and dates).</Text>
+                </div>
+                <Button renderIcon={<IconAnalyticsLine />} interaction={checking ? 'disabled' : 'enabled'} onClick={() => setChecking(true)}>
+                  {checking ? 'Checking…' : 'Run check'}
+                </Button>
+              </div>
+              {/* The name of the criteria the check ran against. The loading screen shows it itself. */}
+              {!checking && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.xs }}>
+                  <Text as="div" size="small" color="secondary">Criteria</Text>
+                  <Text as="div" weight="bold">{CRITERIA_NAME}</Text>
+                </div>
+              )}
+              {checking ? (
+                <ReadinessLoading areas={summary.check.map((g) => g.dimension)} onDone={() => setChecking(false)} />
+              ) : (
+                <ReadinessResults groups={summary.check} />
+              )}
+            </section>
+          </Tabs.Panel>}
           <Tabs.Panel id="tab-history" renderTitle={`Copy history (${summary.history.length})`} isSelected={tab === (cut ? 2 : 3)} padding="general.spaceXl 0 0 0">
       <section aria-labelledby="history" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -471,7 +480,7 @@ export function SummaryView({
       <AdminHelpModal
         open={helpOpen}
         items={todoAll.map((x) => ({ title: x.title, detail: x.detail }))}
-        draft={{ to: 'Me', subject: `To do after copying ${summary.course}`, message: (list) => `Hi,\n\nHere is what is left to do after copying ${summary.course}:\n\n${list}\n\nThank you` }}
+        draft={{ to: 'Me', subject: `To do after copying ${summary.course}`, message: (list) => `Hi,\n\nHere is what is left to do after copying ${summary.course}:\n\n${list}\n\n${GLOBAL_CRITERIA_NOTE}\n\nThank you` }}
         onClose={() => setHelpOpen(false)}
         onSend={() => {}}
       />

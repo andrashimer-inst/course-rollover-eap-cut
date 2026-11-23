@@ -120,7 +120,7 @@ export function buildTodo(args: {
   } else {
     for (const item of dated) {
       const info = rowInfo(item, dates)
-      if (info.finalClosed) todo.push({ group: 'Set the dates', tag: 'Non-teaching day', tone: 'warning', title: `Still on ${fmtShort(info.final ?? info.base)}. Choose a new date.`, detail: `${item.title} (${item.kind}), in ${item.module}`, content: `${item.title} (${item.kind}), in ${item.module}` })
+      if (info.finalClosed) todo.push({ group: 'Set the dates', tag: 'Non-working day', tone: 'warning', title: `Still on ${fmtShort(info.final ?? info.base)}. Choose a new date.`, detail: `${item.title} (${item.kind}), in ${item.module}`, content: `${item.title} (${item.kind}), in ${item.module}` })
     }
     // Items with no due date that were left empty are for the teacher to date later.
     for (const item of undated) {
@@ -157,8 +157,12 @@ export function buildTodo(args: {
 }
 
 // Download the to-do list as a file the teacher keeps.
+// The last line of the to-do list, on the page, in the download and in the message.
+export const GLOBAL_CRITERIA_NOTE =
+  'Your institution can set global acceptance criteria for courses, for example: the syllabus is visible to students, the course start and end dates are set, due dates fall inside the term, and the number of open accessibility issues stays under an agreed limit. If yours has, check your course against them before you publish it.'
+
 export function exportTodo(todo: TodoItem[], course: string) {
-  const rows = [['Group', 'To do', 'Details'], ...todo.map((t) => [t.group, t.title, t.detail])]
+  const rows = [['Group', 'To do', 'Details'], ...todo.map((t) => [t.group, t.title, t.detail]), ['Note', GLOBAL_CRITERIA_NOTE, '']]
   const csv = rows.map((row) => row.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n')
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
   const a = document.createElement('a')

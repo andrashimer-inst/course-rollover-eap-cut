@@ -8,6 +8,7 @@ import {
   Heading,
   Modal,
   ProgressBar,
+  RocketInstUIIcon,
   ScreenReaderContent,
   Text,
 } from "@instructure/ui/v11_7";
@@ -56,27 +57,27 @@ const STEP_INFO: Record<StepId, { name: string; hint: string; lead: string }> =
     select: {
       name: "Select course",
       hint: "Choose the source",
-      lead: "Choose the course you want to copy content from. You can only pick one.",
+      lead: "Choose the course you want to copy content from. You can pick one course. Use the search and the filters to find it.",
     },
     content: {
       name: "Select content",
       hint: "Whole course or selected items",
-      lead: "Choose whether to copy the whole course or only some learning objects.",
+      lead: "Choose whether you want to copy the whole course or only some of its learning objects. If you choose part of it, you also choose how the copy fits with what's already in your course.",
     },
     review: {
       name: "Learning object review",
       hint: "Check each item",
-      lead: "These are the problems the check found in your course. For each one, include the item in the copy, include it and add it to your to-do list to fix later, or leave it out.",
+      lead: "We checked your course and listed what we found. For each finding, you can include the item in the copy, include it and add it to your to-do list to fix later, or leave it out of the copy.",
     },
     dates: {
       name: "Set dates",
       hint: "Place dates in the new term",
-      lead: "Choose how the dates move to the new term, and fix any that land on a non-teaching day. Then check the new dates in the table.",
+      lead: "Choose how the dates of your items move into the new term. If a date lands on a non-working day, you decide where it goes. You can check every new date in the table.",
     },
     copy: {
       name: "Review and copy",
       hint: "Readiness check and final preview",
-      lead: "Choose when students see the course, run the readiness check and look through the final course. When it looks right, start the copy, and your to-do list comes with the summary.",
+      lead: "Choose when students see your course, run the readiness check and look through the final course. When you're happy with it, start the copy. You'll get your to-do list with the summary.",
     },
   };
 
@@ -209,7 +210,7 @@ export default function RolloverWizard({
   onDone,
   draft,
   onSaveLater,
-  quick = false,
+  quick: quickProp = false,
 }: {
   // The quick flow: the whole copy on one page, with no steps.
   quick?: boolean;
@@ -243,14 +244,20 @@ export default function RolloverWizard({
   const [picked, setPicked] = useState<Picked>(draft?.picked ?? {});
   const [mode, setMode] = useState<CopyMode>(draft?.mode ?? "merge");
   // The cut flow has no readiness check, so there is no wait after step 2 and no check in step 5.
+  // The quick flow can switch to the steps while the wizard stays open, so the choices made so far are kept.
+  const [quick, setQuick] = useState(quickProp);
+  // True once the quick flow was switched to the steps. Only then the steps offer the way back.
+  const [cameFromQuick, setCameFromQuick] = useState(false);
   const { cut: flowCut } = useFlow();
   // The quick flow always has the findings of the cut flow and no readiness check.
   const cut = quick || flowCut;
   setCutMode(cut);
   // Quick flow: one choice for all the findings. true adds them to the to-do list.
   const [quickToDo, setQuickToDo] = useState(false);
+  // Quick flow: leave out the items that were unused last term.
+  const [skipUnused, setSkipUnused] = useState(false);
   const info: typeof STEP_INFO = cut
-    ? { ...STEP_INFO, copy: { name: STEP_INFO.copy.name, hint: "Final preview", lead: "Choose when students see the course and look through the final course. When it looks right, start the copy, and your to-do list comes with the summary." } }
+    ? { ...STEP_INFO, copy: { name: STEP_INFO.copy.name, hint: "Final preview", lead: "Choose when students see your course and look through the final course. When you're happy with it, start the copy. You'll get your to-do list with the summary." } }
     : STEP_INFO;
   const [loadingContent, setLoadingContent] = useState(false);
   const [step, setStep] = useState(draft?.step ?? 0);
@@ -271,8 +278,15 @@ export default function RolloverWizard({
   // Quick flow: one choice covers every finding, so each item with a finding gets it. Nothing is left out.
   useEffect(() => {
     if (!quick) return;
-    setChoices(Object.fromEntries(rows.filter((r) => r.hasSuggestion).map((r) => [r.id, quickToDo ? "fix" : "bring"] as [string, Choice])));
-  }, [quick, rows, quickToDo, course]);
+    const unused = new Set(rows.filter((r) => r.findings.some((f) => f.rule.id === "unused")).map(itemIdOf));
+    setChoices(
+      Object.fromEntries(
+        rows
+          .filter((r) => r.hasSuggestion)
+          .map((r) => [r.id, skipUnused && unused.has(itemIdOf(r)) ? "leave" : quickToDo ? "fix" : "bring"] as [string, Choice]),
+      ),
+    );
+  }, [quick, rows, quickToDo, skipUnused, course]);
   // The learning objects that are copied: the ones chosen in step 2, without the ones left out in step 3. The dates step lists only these.
   const included = useMemo<Included>(() => {
     const eff = withPulledIn(picked);
@@ -331,8 +345,8 @@ export default function RolloverWizard({
     }));
     const opens =
       opening.mode === "open"
-        ? `The course publishes on ${openingLabel(opening)}.`
-        : "The course stays unpublished until you publish it.";
+        ? `Your course is scheduled to publish on ${openingLabel(opening)}. Until then, students can't see it.`
+        : "Your course stays unpublished until you publish it. Students can't see it until then.";
     return {
       course,
       target: courseNav.name,
@@ -572,6 +586,11 @@ export default function RolloverWizard({
             <Button onClick={undo} interaction={history.length ? "enabled" : "disabled"}>
               Undo
             </Button>
+            {cameFromQuick && (
+              <Button renderIcon={<RocketInstUIIcon />} onClick={() => setQuick(true)}>
+                Switch back to quick flow
+              </Button>
+            )}
             <Button
               onClick={() =>
                 onSaveLater({ course, scope, picked, mode, step, reached, choices, dupes, dates, readyRan, opening })
@@ -608,11 +627,21 @@ export default function RolloverWizard({
               rows={rows}
               toDo={quickToDo}
               setToDo={setQuickToDo}
+              skipUnused={skipUnused}
+              setSkipUnused={setSkipUnused}
               dates={dates}
               setDates={setDates}
               included={included}
               onCopy={startCopy}
               onCancel={leave}
+              onSwitchToSteps={() => {
+                setQuick(false);
+                setCameFromQuick(true);
+                // The review starts open: only the items left out in the quick flow stay left out. The rest has no choice yet.
+                setChoices((c) => Object.fromEntries(Object.entries(c).filter(([, v]) => v === "leave")));
+                setStep(2);
+                setReached((r) => Math.max(r, 2));
+              }}
             />
           )}
         </div>
@@ -622,7 +651,7 @@ export default function RolloverWizard({
       >
         <Stepper steps={steps} info={info} current={step} reached={reached} onGo={go} />
         {/* A short line on what this step is for, on the steps users were unsure about. */}
-        {!loadingContent && !copying && (id === "review" || id === "dates" || id === "copy") && (
+        {!loadingContent && !copying && (
           <Text as="p" variant="descriptionPage" color="secondary" margin="0">{info[id].lead}</Text>
         )}
         {loadingContent ? (

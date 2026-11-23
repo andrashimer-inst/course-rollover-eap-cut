@@ -23,6 +23,7 @@ export type EducatorComment = {
 const CODES: Record<string, string> = {
   'Design Portfolio': 'DES 310',
   'Biology 101': 'BIO 101',
+  'Cell Biology (Fall 2025)': 'BIO 220',
   'Intro to Design': 'DES 110',
   'World History': 'HIS 120',
 }

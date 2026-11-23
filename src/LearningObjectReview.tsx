@@ -459,7 +459,7 @@ export default function LearningObjectReview({
       {/* The tally as small dashboard cards, so the numbers are easy to see at a glance. */}
       <div aria-live="polite" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(9rem, 1fr))', gap: t.space.md }}>
         {([
-          [comeOver, 'Items in the copy'],
+          [comeOver, 'Items that will be copied'],
           [rows.filter((r) => !done(r)).length, 'Findings to review'],
           [rows.filter((r) => !r.courseWide && !r.extra && r.typeId !== 'modules' && choiceOf(r, choices) === 'leave').length, 'Items left out'],
         ] as const).map(([value, label]) => (

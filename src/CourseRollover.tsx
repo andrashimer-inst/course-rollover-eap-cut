@@ -1,18 +1,20 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { SOURCE_COURSES } from './courseListData'
 import {
+  Billboard,
   Button,
   CloseButton,
   Flex,
   EyeInstUIIcon,
   Heading,
   IconButton,
+  InboxInstUIIcon,
   Link,
-  ListChecksInstUIIcon,
+  ListOrderedInstUIIcon,
   Modal,
   RadioInput,
   ScreenReaderContent,
-  ZapInstUIIcon,
+  RocketInstUIIcon,
   SimpleSelect,
   Table,
   Text,
@@ -27,7 +29,7 @@ import { SummaryView } from './CopySummaryView'
 import StatusPill from './StatusPill'
 import { useAppThemeKey, useSurfaceTokens } from './appTheme'
 import type { CopySummary } from './rolloverData'
-import { PREVIOUS_IMPORTS, UNDO_BLOCKED, newImport } from './sampleImports'
+import { PREVIOUS_IMPORTS, UNDO_BLOCKED, UNDO_EXPIRED, newImport } from './sampleImports'
 import type { ImportRow } from './sampleImports'
 import { commentsForCopy } from './notebookData'
 import type { Note } from './notebookData'
@@ -58,8 +60,33 @@ const DESCRIPTION = 'Use the Import Content tool to migrate course materials fro
 
 const CONTENT_TYPES = ['Copy a Canvas course or learning objects', 'Canvas Course Export Package', 'Zip file', 'QTI .zip file']
 
+
 // Tables sit directly on the page background, so every table part gets a transparent fill.
 const noFill = { background: 'transparent' }
+
+// "Undo the whole copy". A copy made just now can be undone for one minute: the button counts down, then it is disabled. An earlier copy
+// follows the publish rule: a published course cannot be undone.
+function UndoButton({ undoUntil, published, wasUndone, tip, onUndo }: { undoUntil?: number; published: boolean; wasUndone: boolean; tip: string; onUndo: () => void }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    if (!undoUntil || Date.now() >= undoUntil) return
+    const id = window.setInterval(() => setNow(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [undoUntil])
+  const left = undoUntil ? Math.max(0, Math.ceil((undoUntil - now) / 1000)) : null
+  const expired = left === 0
+  const clock = left && left > 0 ? ` (${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')})` : ''
+  return (
+    <Tooltip renderTip={published ? UNDO_BLOCKED : expired ? UNDO_EXPIRED : tip} placement="bottom start">
+      {/* A disabled button gets no hover, so the tooltip sits on a wrapper that can also take focus. */}
+      <span tabIndex={0} style={{ display: 'inline-flex' }}>
+        <Button color="danger" interaction={wasUndone || published || expired ? 'disabled' : 'enabled'} onClick={onUndo}>
+          {`Undo the whole copy${clock}`}
+        </Button>
+      </span>
+    </Tooltip>
+  )
+}
 
 export default function CourseRollover({
   notes = [],
@@ -74,7 +101,7 @@ export default function CourseRollover({
   const t = useSurfaceTokens()
   const [contentType, setContentType] = useState(CONTENT_TYPES[0])
   const adjustDates = true
-  const [imports, setImports] = useState<ImportRow[]>(() => [...PREVIOUS_IMPORTS])
+  const [imports, setImports] = useState<ImportRow[]>(() => PREVIOUS_IMPORTS.slice(0, 1))
   const [wizardOpen, setWizardOpen] = useState(false)
   // Which flow the copy starts with: asked in a window when the copy starts. The quick flow is one page, the other has steps.
   const [quick, setQuick] = useState(false)
@@ -152,25 +179,17 @@ export default function CourseRollover({
           s ? (
             <>
               {!wasUndone && <Button color="primary">Open course</Button>}
-              <Tooltip
-                renderTip={
-                  viewing.published
-                    ? UNDO_BLOCKED
-                    : `Removes everything this copy created. Your ${s.target} Spring 2027 course goes back to empty. Your choices are kept.`
-                }
-                placement="bottom start"
-              >
-                {/* A disabled button gets no hover, so the tooltip sits on a wrapper that can also take focus. */}
-                <span tabIndex={0} style={{ display: 'inline-flex' }}>
-                  <Button color="danger" interaction={wasUndone || viewing.published ? 'disabled' : 'enabled'} onClick={() => setConfirmUndo(true)}>
-                    Undo the whole copy
-                  </Button>
-                </span>
-              </Tooltip>
+              <UndoButton
+                undoUntil={viewing.undoUntil}
+                published={viewing.published}
+                wasUndone={wasUndone}
+                tip={`Removes everything this copy created. Your ${s.target} Spring 2027 course goes back to empty. Your choices are kept.`}
+                onUndo={() => setConfirmUndo(true)}
+              />
             </>
           ) : undefined
         }
-        description={s ? (wasUndone ? 'The copy was undone. Your choices are kept.' : s.opens) : `What was copied from ${viewing.source} on ${viewing.date}.`}
+        description={s ? (wasUndone ? 'The copy was undone. Your choices are kept.' : undefined) : `What was copied from ${viewing.source} on ${viewing.date}.`}
         fullWidth
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -256,6 +275,7 @@ export default function CourseRollover({
             </Flex>
         </View>
 
+            {/* The earlier copies. This version starts with one existing import. */}
             <section
               aria-labelledby="content-imports"
               style={
@@ -269,6 +289,17 @@ export default function CourseRollover({
                   <Text as="div" weight="bold" size="large" id="content-imports">Content imports</Text>
                   <Text as="div" color="secondary">Content import files cannot be downloaded after 500 days.</Text>
                 </div>
+                {imports.length === 0 ? (
+                  <Billboard
+                    size="small"
+                    margin="0"
+                    hero={(size) => <InboxInstUIIcon size={size} />}
+                    heading="No content imports yet"
+                    headingAs="h3"
+                    headingLevel="h3"
+                    message="Content you copy into this course will show up here."
+                  />
+                ) : (
                 <Table caption={() => 'Content imports'} themeOverride={noFill}>
                   <Table.Head themeOverride={noFill}>
                     <Table.Row themeOverride={noFill}>
@@ -303,22 +334,24 @@ export default function CourseRollover({
                     ))}
                   </Table.Body>
                 </Table>
+                )}
               </div>
             </section>
+
       </Flex>
 
       {/* The copy starts with a choice of flow: the quick flow is one page with cards, the other goes through the steps. */}
       <Modal open={flowAsk} onDismiss={() => setFlowAsk(false)} size="small" label="Choose a flow" shouldCloseOnDocumentClick={false}>
         <Modal.Header>
           <CloseButton placement="end" offset="small" onClick={() => setFlowAsk(false)} screenReaderLabel="Close" />
-          <Heading level="h2">How do you want to copy?</Heading>
+          <Heading level="h2">How do you want to copy your content?</Heading>
         </Modal.Header>
         <Modal.Body>
           {/* The two flows as cards under each other. Each has a radio button, an icon, a name and what it is for. The whole card picks it. */}
-          <div role="radiogroup" aria-label="How do you want to copy?" style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
+          <div role="radiogroup" aria-label="How do you want to copy your content?" style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
             {([
-              { value: 'quick', icon: <ZapInstUIIcon />, title: 'Quick flow', text: 'One page: choose the course and content, decide what happens with the findings and the dates, then copy.' },
-              { value: 'steps', icon: <ListChecksInstUIIcon />, title: 'Step by step', text: 'Go through the review of each item, the dates and a preview of the course before the copy.' },
+              { value: 'quick', icon: <RocketInstUIIcon />, title: 'Quick flow', text: 'Everything on one page, in four short sections: choose the course, choose what to copy, decide what to do with what we found, and choose how the dates move. Best when you want to copy fast.' },
+              { value: 'steps', icon: <ListOrderedInstUIIcon />, title: 'Step by step', text: 'Five steps with a review of every item. You check each finding, set the dates yourself and see a preview of your course before you copy. Best when you want to look at everything.' },
             ] as const).map((o) => {
               const on = flowPick === o.value
               return (

@@ -116,17 +116,17 @@ export function placed(old: Date, start: Date): Date {
 export function closedName(date: Date): string | null {
   const hit = CLOSED.find((c) => sameDay(c.date, date))
   if (hit) return hit.name
-  // Saturdays and Sundays are not teaching days.
+  // Saturdays and Sundays are not working days.
   if (date.getDay() === 6) return 'a Saturday'
   if (date.getDay() === 0) return 'a Sunday'
   return date >= SPRING_BREAK.from && date <= SPRING_BREAK.to ? 'Spring break' : null
 }
 
-// A teaching day is not a weekend day, a holiday or spring break.
-const isTeaching = (date: Date) => closedName(date) === null
-export function nextTeaching(date: Date, step: 1 | -1): Date {
+// A working day is not a weekend day, a holiday or spring break.
+const isWorking = (date: Date) => closedName(date) === null
+export function nextWorking(date: Date, step: 1 | -1): Date {
   let next = addDays(date, step)
-  while (!isTeaching(next)) next = addDays(next, step)
+  while (!isWorking(next)) next = addDays(next, step)
   return next
 }
 
@@ -139,7 +139,7 @@ export type RowChoice = { choice: DateChoice; custom: string }
 export type FixDatesState = {
   mode: DateMode
   startText: string
-  // What the "Fix non-teaching days" choice is set to. Empty when none is selected.
+  // What the "Fix non-working days" choice is set to. Empty when none is selected.
   fixAll: '' | 'before' | 'after'
   rows: Record<string, RowChoice>
   // What the items with no due date get. Missing means they stay empty.
@@ -180,13 +180,13 @@ function subInfo(item: DateItem, key: SubKey, state: FixDatesState): SubInfo | n
   const keep = state.mode === 'keep'
   const base = keep ? old : placed(old, start)
   const closed = keep ? null : closedName(base)
-  const before = nextTeaching(base, -1)
-  const after = nextTeaching(base, 1)
+  const before = nextWorking(base, -1)
+  const after = nextWorking(base, 1)
   const id = `${item.id}:${key}`
   const choice = state.rows[id]
   const customDate = choice?.choice === 'custom' ? parseStart(choice.custom) : null
   const customProblem =
-    choice?.choice === 'custom' ? (customDate === null ? 'Enter a date' : closedName(customDate) ? `${closedName(customDate)} is a non-teaching day`.replace(/^a /, 'A ') : null) : null
+    choice?.choice === 'custom' ? (customDate === null ? 'Enter a date' : closedName(customDate) ? `${closedName(customDate)} is a non-working day`.replace(/^a /, 'A ') : null) : null
   const picked = choice?.choice ?? 'keep'
   const final = state.mode === 'clear' ? null : picked === 'before' ? before : picked === 'after' ? after : picked === 'custom' ? (customDate ?? base) : base
   return { key, label: SUB_LABEL[key], id, old, base, closed, before, after, choice, final, finalClosed: keep ? null : final ? closedName(final) : closed, needsDecision: state.mode !== 'clear' && closed !== null, customProblem }
@@ -201,7 +201,7 @@ export type DateRowInfo = {
   before: Date
   after: Date
   choice: RowChoice | undefined
-  // The closed day the item still sits on after the choice, if any. Null once it has moved to a teaching day.
+  // The closed day the item still sits on after the choice, if any. Null once it has moved to a working day.
   finalClosed: string | null
   // Rows that sit on a closed day need a decision. The others are done from the start.
   needsDecision: boolean
@@ -220,8 +220,8 @@ export function rowInfo(item: DateItem, state: FixDatesState): DateRowInfo {
   const keep = state.mode === 'keep'
   const base = keep ? item.old : addDays(placed(item.old, start), item.skew ?? 0)
   const closed = keep ? null : closedName(base)
-  const before = nextTeaching(base, -1)
-  const after = nextTeaching(base, 1)
+  const before = nextWorking(base, -1)
+  const after = nextWorking(base, 1)
   const choice = state.rows[item.id]
   const customDate = choice?.choice === 'custom' ? parseStart(choice.custom) : null
   const customProblem =
@@ -229,7 +229,7 @@ export function rowInfo(item: DateItem, state: FixDatesState): DateRowInfo {
       ? customDate === null
         ? 'Enter a date'
         : closedName(customDate)
-          ? `${closedName(customDate)} is a non-teaching day`.replace(/^a /, 'A ')
+          ? `${closedName(customDate)} is a non-working day`.replace(/^a /, 'A ')
           : null
       : null
   const picked = choice?.choice ?? 'keep'

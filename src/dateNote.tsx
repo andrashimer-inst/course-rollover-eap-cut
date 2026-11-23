@@ -12,8 +12,8 @@ export function dateNoteFor(state: FixDatesState, included: Included) {
     if (mine.length === 0) return NO_DATE_ITEMS.some((n) => n.itemId === itemId && included(n.itemId)) ? <StatusPill size="xs" color="info">No due date</StatusPill> : null
     if (state.mode === 'keep') return null
     if (state.mode === 'clear') return <StatusPill size="xs" color="info">Set it later</StatusPill>
-    if (mine.some((r) => r.finalClosed)) return <StatusPill size="xs" color="warning">Non-teaching day</StatusPill>
-    return mine.some((r) => r.closed) ? <StatusPill size="xs" color="success">Fixed</StatusPill> : <StatusPill size="xs" color="success">Teaching day</StatusPill>
+    if (mine.some((r) => r.finalClosed)) return <StatusPill size="xs" color="warning">Non-working day</StatusPill>
+    return mine.some((r) => r.closed) ? <StatusPill size="xs" color="success">Fixed</StatusPill> : <StatusPill size="xs" color="success">Working day</StatusPill>
   }
 }
 

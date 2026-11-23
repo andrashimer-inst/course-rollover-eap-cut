@@ -107,7 +107,7 @@ export default function ReviewAndCopyStep({
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
             <Text as="div" weight="bold" size="large">Course preview</Text>
-            <Text as="div" color="secondary">{cut ? 'The course as it will look after the copy, with your choices and the dates.' : 'The course as it will look after the copy, with your choices, the dates and the readiness check.'}</Text>
+            <Text as="div" color="secondary">{cut ? 'This is how your course will look after the copy, with your choices and your dates.' : 'This is how your course will look after the copy, with your choices, your dates and the readiness check.'}</Text>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.md }}>
             {!cut && <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>}

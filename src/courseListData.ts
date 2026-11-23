@@ -63,6 +63,14 @@ const RAW_COURSES: Omit<SourceCourse, 'sisId' | 'readinessCheckedOn' | 'subAccou
   { name: 'Molecular Genetics', code: 'BIO 305', teachers: ['You'], students: 58, timeKind: 'Last updated', date: 'Oct 8, 2025' },
   { name: 'Microbiology', code: 'BIO 230', teachers: ['Maria Okafor'], students: 77, timeKind: 'Concluded', date: 'Dec 10, 2025' },
   { name: 'Biochemistry', code: 'CHE 320', teachers: ['You', 'Ben Hartley'], students: 64, timeKind: 'Last used', date: 'Oct 15, 2025' },
+  { name: 'Ecology and Evolution', code: 'BIO 240', teachers: ['You'], students: 72, timeKind: 'Concluded', date: 'Dec 11, 2025' },
+  { name: 'Genetics Lab', code: 'BIO 306', teachers: ['You', 'Maria Okafor'], students: 36, timeKind: 'Last used', date: 'Oct 22, 2025' },
+  { name: 'Immunology', code: 'BIO 340', teachers: ['Maria Okafor'], students: 48, timeKind: 'Last updated', date: 'Sep 24, 2025' },
+  { name: 'Neuroscience', code: 'BIO 350', teachers: ['You'], students: 61, timeKind: 'Concluded', date: 'May 14, 2025' },
+  { name: 'Developmental Biology', code: 'BIO 360', teachers: ['Ben Hartley'], students: 33, timeKind: 'Concluded', date: 'Dec 16, 2024' },
+  { name: 'Plant Biology', code: 'BIO 250', teachers: ['You', 'Ben Hartley'], students: 44, timeKind: 'Last used', date: 'Oct 9, 2025' },
+  { name: 'Marine Biology', code: 'BIO 330', teachers: ['Priya Nair'], students: 52, timeKind: 'Concluded', date: 'Jul 17, 2025' },
+  { name: 'Bioinformatics', code: 'BIO 410', teachers: ['You'], students: 27, timeKind: 'Last updated', date: 'Oct 28, 2025' },
   { name: 'Spanish for Beginners', code: 'SPA 101', teachers: ['Tomas Lindgren'], students: 62, timeKind: 'Concluded', date: 'Dec 16, 2024' },
 ]
 

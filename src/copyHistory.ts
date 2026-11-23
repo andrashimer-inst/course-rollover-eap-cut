@@ -30,7 +30,7 @@ export function buildHistory(args: { rows: ReviewRow[]; choices: Record<string, 
     { tag: 'Session', text: 'Copy started', who: EDUCATORS[1] },
     { tag: 'Session', text: 'Dates checked and fixed', who: EDUCATORS[2] },
     { tag: 'Session', text: 'Learning object review finished', who: EDUCATORS[0] },
-    { tag: 'Session', text: 'Copy wizard opened from Design Portfolio', who: EDUCATORS[0] },
+    { tag: 'Session', text: 'Copy wizard opened', who: EDUCATORS[0] },
   )
   let n = 0
   for (const r of rows) {

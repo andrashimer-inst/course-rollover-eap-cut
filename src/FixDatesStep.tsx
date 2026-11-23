@@ -31,11 +31,11 @@ import { useAppThemeKey, useSurfaceTokens } from './appTheme'
 
 // Step 4 of the copy wizard: fix the dates. The teacher chooses how dates move to the new term, and each item that
 // lands on a closed day (like Presidents' Day) gets a suggestion and a choice: move it before the
-// holiday or after it. Items on a teaching day are done from the start, and any date can be changed by hand.
+// holiday or after it. Items on a working day are done from the start, and any date can be changed by hand.
 
 const noFill = { background: 'transparent' }
 
-// What makes a day a non-teaching day, in plain words: a weekend day or a holiday.
+// What makes a day a non-working day, in plain words: a weekend day or a holiday.
 const reasonOf = (closed: string) => {
   const day = closed.replace(/^a /, '')
   if (day === 'Saturday' || day === 'Sunday') return `${day}, a weekend day`
@@ -62,17 +62,17 @@ const MODES: { id: DateMode; title: string; body: string }[] = [
   {
     id: 'calendar',
     title: 'Move dates to the new term',
-    body: 'Each item keeps its week of term and weekday.',
+    body: 'Each item keeps its week of the term and its weekday. You can change any date yourself afterwards.',
   },
   {
     id: 'keep',
     title: 'Keep the dates as they are',
-    body: 'Items keep the dates of the old course. They are listed here and not checked.',
+    body: 'Your items keep the dates from the old course. They\'re listed here, but we don\'t check them.',
   },
   {
     id: 'clear',
     title: 'Clear dates and set them later',
-    body: 'Items are copied without dates.',
+    body: 'Your items are copied without dates. You\'ll set them in the new course.',
   },
 ]
 
@@ -145,7 +145,7 @@ export default function FixDatesStep({
   const noDated = clear ? [] : NO_DATE_ITEMS.filter((item) => included(item.itemId))
   const [page, setPage] = useState(1)
   // The filter above the table covers every check pill of the Check column, and "All". A row with several dates matches
-  // when any of its dates has the pill. An item with no due date has "No due date", or "Fixed" once it got a date on a teaching day.
+  // when any of its dates has the pill. An item with no due date has "No due date", or "Fixed" once it got a date on a working day.
   type DateFilter = 'all' | 'closed' | 'fixed' | 'teaching' | 'nodue'
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
   const statusesOf = (r: (typeof infos)[number]): DateFilter[] =>
@@ -164,7 +164,7 @@ export default function FixDatesStep({
   const from = (currentPage - 1) * PAGE_SIZE
   const pageInfos = shownInfos.slice(from, from + PAGE_SIZE)
   const pageNoDate = shownNoDated.slice(Math.max(0, from - shownInfos.length), Math.max(0, from + PAGE_SIZE - shownInfos.length))
-  // Items still on a non-teaching day. A fixed item moves to a teaching day, so it no longer counts.
+  // Items still on a non-working day. A fixed item moves to a working day, so it no longer counts.
   const subsOf = infos.flatMap((r) => r.subs)
   const closedCount = infos.filter((r) => !clear && r.finalClosed !== null).length + subsOf.filter((x) => !clear && x.finalClosed !== null).length
   const open = [...infos.filter((r) => r.needsDecision && !r.choice), ...subsOf.filter((x) => x.needsDecision && !x.choice)]
@@ -173,15 +173,15 @@ export default function FixDatesStep({
   const compactCheck = (closed: string | null, finalClosed: string | null, byHand: boolean) => {
     if (clear) return keep ? null : <StatusPill size="sm" color="info">Set it later</StatusPill>
     const why = byHand && finalClosed && finalClosed !== closed ? `Your date is ${reasonOf(finalClosed)}.` : closed ? `${finalClosed ? 'Lands on' : 'Landed on'} ${reasonOf(closed)}.` : ''
-    const pill = finalClosed ? <StatusPill size="sm" color="warning">Non-teaching day</StatusPill> : closed ? <StatusPill size="sm" color="success">Fixed</StatusPill> : <StatusPill size="sm" color="success">Teaching day</StatusPill>
+    const pill = finalClosed ? <StatusPill size="sm" color="warning">Non-working day</StatusPill> : closed ? <StatusPill size="sm" color="success">Fixed</StatusPill> : <StatusPill size="sm" color="success">Working day</StatusPill>
     return why ? <Tooltip renderTip={why} placement="top"><span tabIndex={0} style={{ display: 'inline-block' }}>{pill}</span></Tooltip> : pill
   }
   const subTime = (sb: SubInfo) => (sb.choice?.choice === 'custom' ? state.times?.[sb.id] : undefined) ?? SUB_TIME[sb.key]
-  // Items still on a non-teaching day. A fixed item moves to a teaching day, so it no longer counts.
+  // Items still on a non-working day. A fixed item moves to a working day, so it no longer counts.
 
   // The due time of an item. A time set by hand only counts for a date picked by hand.
   const timeFor = (item: { id: string; time?: string }, byHand: boolean) => (byHand ? state.times?.[item.id] : undefined) ?? timeOf(item)
-  // Every item that lands on a non-teaching day follows this choice. "None selected" takes the choice back. Dates changed
+  // Every item that lands on a non-working day follows this choice. "None selected" takes the choice back. Dates changed
   // by hand are left alone.
   const applyFixAll = (fixAll: '' | 'before' | 'after') => {
     const next = { ...state.rows }
@@ -199,20 +199,20 @@ export default function FixDatesStep({
   }
   const setMode = (mode: DateMode) => setState({ ...state, mode, fixAll: '', rows: {} })
 
-  // Fixes every item that is still on a non-teaching day in one go. It is a button that opens a menu of the ways to fix them, at the end of the
+  // Fixes every item that is still on a non-working day in one go. It is a button that opens a menu of the ways to fix them, at the end of the
   // row with the filter. Choosing the choice that is on again takes it back for every item it moved. The choice that is on has a mark.
   const fixAll = infos.some((r) => r.closed || r.subs.some((x) => x.closed)) ? (
     <Menu
       placement="bottom end"
       themeOverride={{ maxWidth: 'none' }}
       trigger={
-        <Button renderIcon={<IconArrowOpenDownLine />} aria-label="Fix non-teaching days" display="inline-block">
-          Fix non-teaching days
+        <Button renderIcon={<IconArrowOpenDownLine />} aria-label="Fix non-working days" display="inline-block">
+          Fix non-working days
         </Button>
       }
     >
       <Menu.Group
-        label={<ScreenReaderContent>Move dates that are on a non-teaching day</ScreenReaderContent>}
+        label={<ScreenReaderContent>Move dates that are on a non-working day</ScreenReaderContent>}
         selected={[state.fixAll]}
         onSelect={(_e, updated) => {
           // Choosing the choice that is on takes it back.
@@ -220,8 +220,8 @@ export default function FixDatesStep({
           applyFixAll(value === state.fixAll ? '' : (value as 'before' | 'after'))
         }}
       >
-        <Menu.Item value="before"><span style={{ paddingInlineEnd: '2.5rem' }}>Move to the previous teaching day</span></Menu.Item>
-        <Menu.Item value="after"><span style={{ paddingInlineEnd: '2.5rem' }}>Move to the next teaching day</span></Menu.Item>
+        <Menu.Item value="before"><span style={{ paddingInlineEnd: '2.5rem' }}>Move to the previous working day</span></Menu.Item>
+        <Menu.Item value="after"><span style={{ paddingInlineEnd: '2.5rem' }}>Move to the next working day</span></Menu.Item>
       </Menu.Group>
     </Menu>
   ) : null
@@ -236,7 +236,7 @@ export default function FixDatesStep({
             value={state.startText}
             onChange={(_e, v) => setState({ ...state, startText: v, fixAll: '', rows: {} })}
             // The first day of the old course sits under the field, so the new day can be compared with it.
-            messages={parseStart(state.startText) ? [{ type: 'hint', text: `${courseName ? `${courseName}, Fall 2026,` : 'Fall 2026'} started on ${FALL_START.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` }] : [{ type: 'newError', text: 'Enter a valid date' }]}
+            messages={parseStart(state.startText) ? [{ type: 'hint', text: `${courseName || 'The old course'} started on ${FALL_START.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` }] : [{ type: 'newError', text: 'Enter a valid date' }]}
           />
     </div>
   )
@@ -257,7 +257,7 @@ export default function FixDatesStep({
         interaction={card ? 'readonly' : 'disabled'}
         value={endOfCourse ? endOfCourse.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) : 'Enter a first day'}
         // The last day of the old course sits under the field, like the first day of the old course does under the first day.
-        messages={[{ type: 'hint', text: `${courseName ? `${courseName}, Fall 2026,` : 'Fall 2026'} ended on ${FALL_END.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` }]}
+        messages={[{ type: 'hint', text: `${courseName || 'The old course'} ended on ${FALL_END.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}` }]}
       />
     </div>
   )
@@ -330,7 +330,7 @@ export default function FixDatesStep({
             <Text as="div" color="secondary" aria-live="polite">
               {clear
                 ? keep ? `${dateCount} dates · kept as they are` : `${dateCount} dates cleared · set them after the copy`
-                : `${dateCount} dates to review · ${closedCount === 0 ? 'all on teaching days' : `${closedCount} on a non-teaching day · ${open.length} still to fix`}`}
+                : `${dateCount} dates to review · ${closedCount === 0 ? 'all on working days' : `${closedCount} on a non-working day · ${open.length} still to fix`}`}
             </Text>
           </div>
           {/* The filter on the check pills at the start of the row and the fix button at its end, under a line. */}
@@ -343,16 +343,16 @@ export default function FixDatesStep({
                   onChange={(_e, { value }) => { setDateFilter(value as DateFilter); setPage(1) }}
                 >
                   <SimpleSelect.Option id="date-filter-all" value="all">{`All (${countFor('all')})`}</SimpleSelect.Option>
-                  <SimpleSelect.Option id="date-filter-closed" value="closed">{`Non-teaching day (${countFor('closed')})`}</SimpleSelect.Option>
+                  <SimpleSelect.Option id="date-filter-closed" value="closed">{`Non-working day (${countFor('closed')})`}</SimpleSelect.Option>
                   <SimpleSelect.Option id="date-filter-fixed" value="fixed">{`Fixed (${countFor('fixed')})`}</SimpleSelect.Option>
-                  <SimpleSelect.Option id="date-filter-teaching" value="teaching">{`Teaching day (${countFor('teaching')})`}</SimpleSelect.Option>
+                  <SimpleSelect.Option id="date-filter-teaching" value="teaching">{`Working day (${countFor('teaching')})`}</SimpleSelect.Option>
                   <SimpleSelect.Option id="date-filter-nodue" value="nodue">{`No due date (${countFor('nodue')})`}</SimpleSelect.Option>
                 </SimpleSelect>
               </div>
               {fixAll}
             </div>
           )}
-          <Table caption={() => 'Dates of the items to copy'} themeOverride={noFill}>
+          <Table caption={() => 'Dates of the items that will be copied'} themeOverride={noFill}>
             <Table.Head themeOverride={noFill}>
               <Table.Row themeOverride={noFill}>
                 <Table.ColHeader themeOverride={noFill} id="item">Item</Table.ColHeader>
@@ -402,17 +402,17 @@ export default function FixDatesStep({
                               </>
                             )}
                           </div>
-                          {/* A check mark when the date is fixed, an alert while it still lands on a non-teaching day. */}
+                          {/* A check mark when the date is fixed, an alert while it still lands on a non-working day. */}
                           {r.final && (
                             <Tooltip
                               renderTip={
                                 r.finalClosed
                                   ? r.choice?.choice === 'custom'
-                                    ? 'This date is on a non-teaching day.'
-                                    : 'Not fixed yet. This date is on a non-teaching day.'
+                                    ? 'This date is on a non-working day.'
+                                    : 'Not fixed yet. This date is on a non-working day.'
                                   : r.closed
-                                    ? 'Fixed. The date moved to a teaching day.'
-                                    : 'Nothing to fix. This date is on a teaching day.'
+                                    ? 'Fixed. The date moved to a working day.'
+                                    : 'Nothing to fix. This date is on a working day.'
                               }
                               placement="top"
                             >
@@ -453,10 +453,10 @@ export default function FixDatesStep({
                                   </>
                                 )}
                               </div>
-                              {/* A check mark when the date is fine or fixed, an alert while it still lands on a non-teaching day. */}
+                              {/* A check mark when the date is fine or fixed, an alert while it still lands on a non-working day. */}
                               {sb.final && (
                                 <Tooltip
-                                  renderTip={sb.finalClosed ? (sb.choice?.choice === 'custom' ? 'This date is on a non-teaching day.' : 'Not fixed yet. This date is on a non-teaching day.') : sb.closed ? 'Fixed. The date moved to a teaching day.' : 'Nothing to fix. This date is on a teaching day.'}
+                                  renderTip={sb.finalClosed ? (sb.choice?.choice === 'custom' ? 'This date is on a non-working day.' : 'Not fixed yet. This date is on a non-working day.') : sb.closed ? 'Fixed. The date moved to a working day.' : 'Nothing to fix. This date is on a working day.'}
                                   placement="top"
                                 >
                                   <span
@@ -505,7 +505,7 @@ export default function FixDatesStep({
                         <DateBlock first label={item.kind === 'Event' ? 'Date' : 'Due'}>No date</DateBlock>
                       </Table.Cell>
                       <Table.Cell themeOverride={noFill}>
-                        {/* Once a date is set on a teaching day the item is fixed. On a non-teaching day it is not fixed yet. */}
+                        {/* Once a date is set on a working day the item is fixed. On a non-working day it is not fixed yet. */}
                         <DateBlock first label={item.kind === 'Event' ? 'Date' : 'Due'}>
                           {date && !closedName(date)
                             ? <StatusPill size="sm" color="success">Fixed</StatusPill>
@@ -523,7 +523,7 @@ export default function FixDatesStep({
                                 {pick !== 'last' && <Text as="div" size="small" color="secondary">Set by you</Text>}
                                 {date && closedName(date) && (
                                   <div style={{ marginTop: t.space.xs, display: 'flex', flexDirection: 'column', gap: t.space.xs, alignItems: 'flex-start' }}>
-                                    <StatusPill size="xs" color="warning">Non-teaching day</StatusPill>
+                                    <StatusPill size="xs" color="warning">Non-working day</StatusPill>
                                     <Text as="div" size="small" color="secondary">{reasonOf(closedName(date) as string)}</Text>
                                   </div>
                                 )}
@@ -532,11 +532,11 @@ export default function FixDatesStep({
                               <Text color="secondary">No date</Text>
                             )}
                           </div>
-                          <Tooltip renderTip={date ? (closedName(date) ? 'This date is on a non-teaching day.' : 'Dated. This item now has a due date.') : 'No date yet. Set one later, or pick a date.'} placement="top">
+                          <Tooltip renderTip={date ? (closedName(date) ? 'This date is on a non-working day.' : 'Dated. This item now has a due date.') : 'No date yet. Set one later, or pick a date.'} placement="top">
                             <span
                               tabIndex={0}
                               role="img"
-                              aria-label={date ? (closedName(date) ? 'On a non-teaching day' : 'Dated') : 'No date yet'}
+                              aria-label={date ? (closedName(date) ? 'On a non-working day' : 'Dated') : 'No date yet'}
                               style={{ display: 'inline-flex', paddingBlockStart: '0.25rem', color: date && !closedName(date) ? t.successTextColor : t.warningTextColor }}
                             >
                               {date && !closedName(date) ? <CircleCheckInstUIIcon /> : <CircleAlertInstUIIcon />}

@@ -50,7 +50,7 @@ export default function PublishCards({ opening, setOpening }: { opening: Opening
             label: 'Schedule publishing',
             content: (
               <>
-                <Text as="div" color="secondary">The course is published automatically at the date and time you set. Until then it is not visible to students.</Text>
+                <Text as="div" color="secondary">We'll publish your course on the date and at the time you choose. Until then, students can't see it.</Text>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start' }}>
                   <div style={{ width: '14rem', maxWidth: '100%' }}>
                     <DateInput

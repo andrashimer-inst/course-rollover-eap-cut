@@ -53,5 +53,5 @@ export const DESIGN_RULES: DesignRule[] = [
   { id: 'links', dimension: 'Copy checks', severity: 'critical', level: 'course', title: 'Links between items open the right item.', why: 'A link that points to the old course shows students an error.' },
   { id: 'missing-links', dimension: 'Copy checks', severity: 'critical', level: 'course', title: 'Tool (LTI) links are linked again.', why: 'Canvas cannot copy the connection to an external tool, so each link needs to be linked again before students use it.' },
   { id: 'unused', dimension: 'Copy checks', severity: 'warning', level: 'object', title: 'Items not used last term are reviewed.', why: 'A shorter course is easier to find your way in, and unused items add clutter and things to maintain.' },
-  { id: 'dates-teaching', dimension: 'Copy checks', severity: 'warning', level: 'course', title: 'Dates land on teaching days.', why: 'A date on a weekend or a holiday is easy to miss.', handled: 'Set in the Set dates step.' },
+  { id: 'dates-teaching', dimension: 'Copy checks', severity: 'warning', level: 'course', title: 'Dates land on working days.', why: 'A date on a weekend or a holiday is easy to miss.', handled: 'Set in the Set dates step.' },
 ]

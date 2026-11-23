@@ -27,6 +27,7 @@ import { currentMeta } from './dateNote'
 import { RULE_LABEL, findingsOf } from './reviewData'
 import FigmaAlert from './FigmaAlert'
 import RadioWithContent from './RadioWithContent'
+import ChoiceCards from './ChoiceCards'
 import SegmentedControl from './SegmentedControl'
 import StatusPill from './StatusPill'
 import { THEMES, useAppThemeKey, useSurfaceTokens } from './appTheme'
@@ -272,7 +273,8 @@ export function ItemProblems({ itemId }: { itemId?: string }) {
   const found = findingsOf(itemId)
   if (found.length === 0) return null
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md, marginBlockEnd: t.space.lg }}>
+    // In a frame of its own, like the item below it, so the findings and the item are two separate things.
+    <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md, marginBlockEnd: t.space.lg, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusMd, padding: t.space.lg }}>
       <Text as="div" weight="bold">What needs to be fixed</Text>
       {found.map((f, n) => (
         <div key={n} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
@@ -386,6 +388,31 @@ export default function ContentStep({
     >
       {/* In the quick flow the card already has the title, so only the "Copy" label is left. */}
       {!bare && <Text weight="bold" size="large">Content to copy</Text>}
+      {bare ? (
+        // The quick flow: the alert about replacing content, then the two choices as cards under each other.
+        <>
+        {scope === 'whole' && (
+          <FigmaAlert variant="warning" type="inline">
+            The copy replaces the content that an earlier copy added to your course. Content you added yourself stays.
+          </FigmaAlert>
+        )}
+        <ChoiceCards
+          name="content-scope"
+          legend="Copy"
+          hideLegend
+          value={scope ?? ''}
+          onChange={(value) => setScope(value as Scope)}
+          choices={[
+            {
+              value: 'whole',
+              title: 'The whole course',
+              text: `You'll copy ${wholeCount} ${wholeCount === 1 ? 'item' : 'items'}.`,
+            },
+            { value: 'part', title: 'Part of it', text: 'You choose which learning objects to copy.' },
+          ]}
+        />
+        </>
+      ) : (
       <RadioWithContent
         name="content-scope"
         legend="Copy"
@@ -397,9 +424,9 @@ export default function ContentStep({
             label: 'The whole course',
             content: (
               <>
-                <Text as="div" color="secondary">{`${wholeCount} ${wholeCount === 1 ? 'item' : 'items'} will be copied.`}</Text>
+                <Text as="div" color="secondary">{`You'll copy ${wholeCount} ${wholeCount === 1 ? 'item' : 'items'}.`}</Text>
                 <FigmaAlert variant="warning" type="inline">
-                  Copying the whole course replaces the content copied here before. Content you added yourself stays in the course.
+                  The copy replaces the content that an earlier copy added to your course. Content you added yourself stays.
                 </FigmaAlert>
               </>
             ),
@@ -407,9 +434,10 @@ export default function ContentStep({
           {
             value: 'part',
             label: 'Part of it',
-            content: (
+            // The quick flow has nothing under this choice. The step-by-step flow asks how the copy fits with the course.
+            content: bare ? undefined : (
               <>
-                <Text as="div" color="secondary">{partText}</Text>
+                <Text as="div" color="secondary">{`You can copy these types of content: ${partText}`}</Text>
                 <div>
                   <SegmentedControl
                     label="How should it be copied?"
@@ -423,8 +451,8 @@ export default function ContentStep({
                   <div style={{ marginTop: t.space.sm }}>
                     <Text as="div" size="small" color="secondary">
                       {mode === 'replace'
-                        ? 'Replaces what an earlier copy added. Content you added yourself stays.'
-                        : 'Keeps everything that is in the course now, including earlier copies.'}
+                        ? 'This replaces what an earlier copy added. The content you added yourself stays.'
+                        : 'This keeps everything that\'s in your course now, including earlier copies.'}
                     </Text>
                   </div>
                 </div>
@@ -433,6 +461,7 @@ export default function ContentStep({
           },
         ]}
       />
+      )}
     </div>
   )
 
@@ -441,6 +470,8 @@ export default function ContentStep({
       {scopeCard}
 
       {/* The list to tick from and the preview of the course sit side by side. On a narrow page they stack. */}
+      {/* Nothing to show in the quick flow while the whole course is chosen, so the row is left out and adds no space. */}
+      {(scope === 'part' || (scope && !noPreview)) && (
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: sectionGap }}>
       {scope === 'part' && (
         <div style={{ flex: '1 1 24rem', minWidth: 0, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -455,7 +486,7 @@ export default function ContentStep({
             <div style={{ marginBottom: t.space.md, display: 'flex', flexDirection: 'column', gap: t.space.xs }}>
               <Text weight="bold" size={bare ? 'medium' : 'large'}>Choose the learning objects to copy</Text>
               {/* The same count as the first card in step 3: modules hold items, so they are not counted themselves. */}
-              <Text as="div" color="secondary" aria-live="polite">{itemCount} {itemCount === 1 ? 'item' : 'items'} in the copy</Text>
+              <Text as="div" color="secondary" aria-live="polite">{itemCount} {itemCount === 1 ? 'item' : 'items'} will be copied</Text>
             </div>
             <Checkbox
               label="Select all"
@@ -542,6 +573,7 @@ export default function ContentStep({
         </div>
       )}
       </div>
+      )}
       <ItemPreviewModal item={openItem} onClose={() => setOpenItem(null)} />
     </div>
   )
