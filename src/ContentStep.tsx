@@ -391,11 +391,9 @@ export default function ContentStep({
       {bare ? (
         // The quick flow: the alert about replacing content, then the two choices as cards under each other.
         <>
-        {scope === 'whole' && (
-          <FigmaAlert variant="warning" type="inline">
-            The copy replaces the content that an earlier copy added to your course. Content you added yourself stays.
-          </FigmaAlert>
-        )}
+        <FigmaAlert variant="warning" type="inline">
+          Content you added yourself stays in your course. The copy can replace content that an earlier copy added.
+        </FigmaAlert>
         <ChoiceCards
           name="content-scope"
           legend="Copy"
