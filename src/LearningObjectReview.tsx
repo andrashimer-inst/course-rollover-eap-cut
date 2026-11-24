@@ -3,10 +3,14 @@ import type { ReactNode } from 'react'
 import {
   Button,
   Checkbox,
+  Heading,
   CircleCheckInstUIIcon,
   IconArrowOpenDownSolid,
   IconArrowOpenUpSolid,
   IconArrowOpenEndSolid,
+  IconButton,
+  LayoutListInstUIIcon,
+  TableInstUIIcon,
   ScreenReaderContent,
   SimpleSelect,
   Tooltip,
@@ -82,6 +86,8 @@ export default function LearningObjectReview({
   const [tab, setTab] = useState(0)
   // The cut flow has no criteria and no readiness check, and no general items (they all come from the criteria).
   const { cut } = useFlow()
+  // The modules and learning objects tabs share two looks: the table, and a card for each module or type.
+  const [moduleCards, setModuleCards] = useState(false)
   const [checking, setChecking] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [criteriaOpen, setCriteriaOpen] = useState(false)
@@ -152,7 +158,20 @@ export default function LearningObjectReview({
   const moduleIds = scope === 'whole' ? MODULES.map((m) => m.id) : MODULES.filter((m) => picked[m.id]).map((m) => m.id)
 
   // A chosen field gets a check mark next to it. The whole row is highlighted by the table styles below.
-  const chooser = (label: string, value: string | undefined, options: { id: string; label: string }[], onPick: (id: string) => void, canClear: boolean, help?: ReactNode) => (
+  const chooser = (label: string, value: string | undefined, options: { id: string; label: string }[], onPick: (id: string) => void, canClear: boolean, help?: ReactNode, checkFirst = false) => {
+    const mark = (
+      <span style={{ width: '1.5rem', flexShrink: 0, color: t.successTextColor, display: 'inline-flex' }}>
+        {value && (
+          <Tooltip
+            renderTip={canClear ? 'Already reviewed. You can change it.' : 'Nothing to decide. It is copied unchanged.'}
+            placement="top"
+          >
+            <span role="img" aria-label="Done" tabIndex={0} style={{ display: 'inline-flex' }}><CircleCheckInstUIIcon /></span>
+          </Tooltip>
+        )}
+      </span>
+    )
+    return (
     <div
       style={{
         display: 'flex',
@@ -160,6 +179,7 @@ export default function LearningObjectReview({
         gap: t.space.sm,
       }}
     >
+      {checkFirst && mark}
       <div style={{ flex: 1, minWidth: 0 }}>
         <SimpleSelect
           renderLabel={<ScreenReaderContent>{label}</ScreenReaderContent>}
@@ -175,27 +195,14 @@ export default function LearningObjectReview({
         </SimpleSelect>
       </div>
       {help !== undefined && <span style={{ width: '2rem', flexShrink: 0, display: 'inline-flex' }}>{help}</span>}
-      <span style={{ width: '1.5rem', flexShrink: 0, color: t.successTextColor, display: 'inline-flex' }}>
-        {value && (
-          <Tooltip
-            renderTip={canClear ? 'Already reviewed. You can change it.' : 'Nothing to decide. It is copied unchanged.'}
-            placement="top"
-          >
-            <span role="img" aria-label="Done" tabIndex={0} style={{ display: 'inline-flex' }}><CircleCheckInstUIIcon /></span>
-          </Tooltip>
-        )}
-      </span>
+      {!checkFirst && mark}
     </div>
-  )
+    )
+  }
 
-  // The bulk action for the ticked rows. It shows above the table of the open tab.
-  const bulkBar = (label: string) =>
-    selected.length > 0 ? (
-          <div
-            role="region"
-            aria-label={label}
-            style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.sm, alignItems: 'center', padding: t.space.md, borderRadius: t.radiusCardSm, background: legacy ? undefined : t.containerColor, boxShadow: legacy ? undefined : t.shadowResting, borderBlock: legacy ? `${t.borderWidth} solid ${t.borderColor}` : undefined }}
-          >
+  // What the bulk bar holds: how many are ticked, the action, and the buttons to undo or clear.
+  const bulkControls = (
+    <>
             <Text weight="bold">{selected.length} selected</Text>
             <div style={{ width: '16rem', maxWidth: '100%' }}>
               <SimpleSelect
@@ -220,8 +227,169 @@ export default function LearningObjectReview({
               Reset choices
             </Button>
             <Button size="small" color="secondary" onClick={() => { setSelected([]); setBulk('') }}>Clear selection</Button>
+    </>
+  )
+
+  // The bulk action for the ticked rows. It shows above the table of the open tab.
+  const bulkBar = (label: string) =>
+    selected.length > 0 ? (
+          <div
+            role="region"
+            aria-label={label}
+            style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.sm, alignItems: 'center', padding: t.space.md, borderRadius: t.radiusCardSm, background: legacy ? undefined : t.containerColor, boxShadow: legacy ? undefined : t.shadowResting, borderBlock: legacy ? `${t.borderWidth} solid ${t.borderColor}` : undefined }}
+          >
+            {bulkControls}
           </div>
     ) : null
+
+  // What was found in one item, as pills with the detail. Both views of the modules use it.
+  const findingCell = (r: ReviewRow) => (
+    !r.hasSuggestion ? (
+                          <div>
+                            {/* A green pill like the findings have, so a row with nothing found reads as fine at a glance. */}
+                            <StatusPill size="sm" color="success">Nothing found</StatusPill>
+                            <Text as="div">It is copied as it is.</Text>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
+                            {r.findings.map((f) => (
+                              <div key={f.rule.id + f.detail}>
+                                <StatusPill size="sm" color="warning">
+                                  {RULE_LABEL[f.rule.id] ?? f.rule.title}
+                                </StatusPill>
+                                <Text as="div">{f.detail}</Text>
+                              </div>
+                            ))}
+                            {r.findings.length === 0 && r.note && (
+                              <div>
+                                <StatusPill size="sm" color={r.note.decision === 'copy' ? 'success' : 'warning'}>
+                                  {NOTE_LABEL[r.note.id] ?? 'Flagged by your team'}
+                                </StatusPill>
+                                <Text as="div">{r.note.author} left a note about this last term.</Text>
+                              </div>
+                            )}
+                          </div>
+                        )
+  )
+
+  // The action chooser of one item.
+  const actionCell = (r: ReviewRow, checkFirst = false) => {
+    const choice = choiceOf(r, choices)
+    return (
+      chooser(
+                          `Choice for ${r.title}`,
+                          choice,
+                          (r.options ?? CHOICES).map((c) => ({ id: c, label: choiceLabel(r, c) })),
+                          (id) => {
+                            if (id !== '') setChoices({ ...choices, [r.id]: id as Choice })
+                            else {
+                              const { [r.id]: _taken, ...rest } = choices
+                              setChoices(rest)
+                            }
+                          },
+                          r.hasSuggestion,
+                          undefined,
+                          checkFirst,
+                        )
+    )
+  }
+
+  // The other look of the modules: a card for each module, its items as grey rows inside. Same data and actions as the table.
+  const moduleCardList = (subset: ReviewRow[], title: string) => {
+    const groups = groupsOf(subset).filter((g) => g !== 'Whole course')
+    const allSel = subset.length > 0 && subset.every((r) => selected.includes(r.id))
+    const someSel = subset.some((r) => selected.includes(r.id))
+    const rowFill = `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+            <Text weight="bold" size="large">{title}</Text>
+            <Text as="div" color="secondary">
+              {left(subset) > 0 ? `${left(subset)} ${left(subset) === 1 ? 'finding' : 'findings'} left to review` : 'All findings reviewed'}
+            </Text>
+          </div>
+        </div>
+        {/* One white card for choosing: the tick for all items, and next to it the bulk actions once something is ticked. */}
+        <div
+          role="region"
+          aria-label="Bulk actions"
+          style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', padding: t.space.md, minHeight: '4rem', boxSizing: 'border-box', borderRadius: t.radiusCardMd, background: t.containerColor, boxShadow: card ? t.shadowResting : undefined, border: `${t.borderWidth} solid ${t.borderColor}` }}
+        >
+          <Checkbox
+            label="Select all items"
+            checked={allSel}
+            indeterminate={!allSel && someSel}
+            onChange={() => setSelected(allSel ? selected.filter((s) => !subset.some((r) => r.id === s)) : [...new Set([...selected, ...subset.map((r) => r.id)])])}
+          />
+          {selected.length > 0 ? bulkControls : <Text color="secondary">For bulk actions, select one or more items.</Text>}
+        </div>
+        {groups.map((g) => {
+          const inGroup = subset.filter((r) => r.group === g)
+          const all = rows.filter((r) => r.group === g && r.typeId !== 'modules' && !r.extra)
+          const coming = all.filter((r) => choiceOf(r, choices) !== 'leave').length
+          const open = !closedGroups.includes(g)
+          const todo = inGroup.filter((r) => r.hasSuggestion && !done(r)).length
+          return (
+            <section
+              key={g}
+              aria-label={g}
+              style={{
+                background: t.containerColor,
+                borderRadius: t.radiusCardMd,
+                boxShadow: card ? t.shadowResting : undefined,
+                border: `${t.borderWidth} solid ${t.borderColor}`,
+                padding: t.space.lg,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: t.space.md,
+              }}
+            >
+              <button
+                type="button"
+                aria-expanded={open}
+                onClick={() => toggleGroup(g)}
+                style={{ all: 'unset', boxSizing: 'border-box', width: '100%', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: t.space.md, color: t.textColor }}
+              >
+                <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: t.space.xs }}>
+                  <Heading level="h4" as="h3">{g}</Heading>
+                  <Text size="small" color="secondary">
+                    {`${coming} of ${all.length} items will be copied`}{todo > 0 ? ` · ${todo} ${todo === 1 ? 'finding' : 'findings'} left to review` : ''}
+                  </Text>
+                </span>
+                <span aria-hidden="true" style={{ display: 'inline-flex' }}>{open ? <IconArrowOpenUpSolid /> : <IconArrowOpenDownSolid />}</span>
+              </button>
+              {open && inGroup.map((r) => (
+                <div
+                  key={r.id}
+                  style={{ background: rowFill, borderRadius: t.radiusCardSm, padding: t.space.md, display: 'flex', gap: t.space.sm, alignItems: 'center' }}
+                >
+                  <div style={{ flex: '0 0 1.5rem', width: '1.5rem' }}>
+                    <Checkbox
+                      label={<ScreenReaderContent>{`Select ${r.title}`}</ScreenReaderContent>}
+                      checked={selected.includes(r.id)}
+                      onChange={() => toggle(r.id)}
+                    />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center' }}>
+                    <div style={{ flex: '1 1 16rem', minWidth: 0, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+                      <div>
+                        <Text as="div" weight="bold">{r.title}</Text>
+                        <Text as="div" size="small" color="secondary">{r.kindLabel}</Text>
+                        {r.note && <Text as="div" size="small" color="primary">Your team’s note: {r.note.text}</Text>}
+                      </div>
+                      {findingCell(r)}
+                    </div>
+                    <div style={{ flex: '0 1 16rem', minWidth: '12rem' }}>{actionCell(r, true)}</div>
+                  </div>
+                </div>
+              ))}
+            </section>
+          )
+        })}
+      </div>
+    )
+  }
 
   // The table of one card. The whole course and the modules each get a card of their own.
   const reviewTable = (subset: ReviewRow[], caption: string, title?: string, showTitle = true) => {
@@ -326,7 +494,6 @@ export default function LearningObjectReview({
                   </Table.Cell>
                 </Table.Row>,
                 ...(bar && closedGroups.includes(g) ? [] : inGroup).map((r) => {
-                  const choice = choiceOf(r, choices)
                   return (
                     <Table.Row themeOverride={noFill} key={r.id}>
                       <Table.Cell themeOverride={noFill}>
@@ -346,47 +513,10 @@ export default function LearningObjectReview({
                         )}
                       </Table.Cell>
                       <Table.Cell themeOverride={noFill}>
-                        {!r.hasSuggestion ? (
-                          <>
-                            {/* A green pill like the findings have, so a row with nothing found reads as fine at a glance. */}
-                            <StatusPill size="sm" color="success">Nothing found</StatusPill>
-                            <Text as="div">It is copied as it is.</Text>
-                          </>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
-                            {r.findings.map((f) => (
-                              <div key={f.rule.id + f.detail}>
-                                <StatusPill size="sm" color={f.rule.severity === 'critical' || f.rule.id.startsWith('a11y') ? 'error' : 'warning'}>
-                                  {RULE_LABEL[f.rule.id] ?? f.rule.title}
-                                </StatusPill>
-                                <Text as="div">{f.detail}</Text>
-                              </div>
-                            ))}
-                            {r.findings.length === 0 && r.note && (
-                              <div>
-                                <StatusPill size="sm" color={r.note.decision === 'copy' ? 'success' : 'warning'}>
-                                  {NOTE_LABEL[r.note.id] ?? 'Flagged by your team'}
-                                </StatusPill>
-                                <Text as="div">{r.note.author} left a note about this last term.</Text>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        {findingCell(r)}
                       </Table.Cell>
                       <Table.Cell themeOverride={noFill}>
-                        {chooser(
-                          `Choice for ${r.title}`,
-                          choice,
-                          (r.options ?? CHOICES).map((c) => ({ id: c, label: choiceLabel(r, c) })),
-                          (id) => {
-                            if (id !== '') setChoices({ ...choices, [r.id]: id as Choice })
-                            else {
-                              const { [r.id]: _taken, ...rest } = choices
-                              setChoices(rest)
-                            }
-                          },
-                          r.hasSuggestion,
-                        )}
+                        {actionCell(r)}
                       </Table.Cell>
                     </Table.Row>
                   )
@@ -402,7 +532,7 @@ export default function LearningObjectReview({
   // The buttons under the tabs.
   // Only the kinds of finding the open tab has. A kind with no rows there is left out, unless it is the one chosen.
   const shownKinds = (list: ReviewRow[]) => kinds.filter(([id]) => countOf(list, `rule:${id}`) > 0 || filter === `rule:${id}`)
-  const filterRow = (list: ReviewRow[]) => (
+  const filterRow = (list: ReviewRow[], switchable = false) => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm }}>
         <Text weight="bold">Findings</Text>
@@ -428,6 +558,16 @@ export default function LearningObjectReview({
         {/* Check acts on the findings, so it stands apart from the buttons that only open something. */}
         {!cut && <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>}
         {!cut && <span aria-hidden="true" style={{ alignSelf: 'stretch', width: t.borderWidth, minHeight: '2rem', background: t.textColor }} />}
+        {switchable && (
+          <Tooltip renderTip={moduleCards ? 'Show the items as a table' : 'Show the items as cards'} placement="top">
+            <IconButton
+              screenReaderLabel={moduleCards ? 'Show the items as a table' : 'Show the items as cards'}
+              onClick={() => setModuleCards(!moduleCards)}
+            >
+              {moduleCards ? <TableInstUIIcon /> : <LayoutListInstUIIcon />}
+            </IconButton>
+          </Tooltip>
+        )}
         <Button renderIcon={<IconEyeLine />} onClick={() => setPreviewOpen(true)}>Course preview</Button>
         <Button renderIcon={<IconEmailLine />} onClick={() => setHelpOpen(true)}>Ask for help</Button>
         <Button renderIcon={<IconAssignmentLine />} onClick={onToggleTodo}>To-do list ({todo.length})</Button>
@@ -499,18 +639,18 @@ export default function LearningObjectReview({
       }}>
         <Tabs.Panel id="tab-modules" renderTitle={`Modules (${moduleLeft})`} isSelected={tab === 0} padding="general.spaceMd 0 0 0">
           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
-            {filterRow(moduleRows)}
-            {bulkBar('Bulk actions')}
-          {moduleRows.length > 0 ? filtered(moduleRows).length > 0 ? reviewTable(filtered(moduleRows), 'Learning objects in modules', 'Modules') : <Text as="p">No items match this filter.</Text> : <Text as="p">No items in modules to review.</Text>}
+            {filterRow(moduleRows, true)}
+            {!moduleCards && bulkBar('Bulk actions')}
+          {moduleRows.length > 0 ? filtered(moduleRows).length > 0 ? (moduleCards ? moduleCardList(filtered(moduleRows), 'Modules') : reviewTable(filtered(moduleRows), 'Learning objects in modules', 'Modules')) : <Text as="p">No items match this filter.</Text> : <Text as="p">No items in modules to review.</Text>}
           </div>
         </Tabs.Panel>
         <Tabs.Panel id="tab-objects" renderTitle={`Learning objects (${objectsLeft})`} isSelected={tab === 1} padding="general.spaceMd 0 0 0">
           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
-            {filterRow(standaloneRows)}
-            {bulkBar('Bulk actions')}
+            {filterRow(standaloneRows, true)}
+            {!moduleCards && bulkBar('Bulk actions')}
           {/* This tab lists what you chose on the previous page that is copied without a module. */}
           {standaloneRows.length > 0 ? (
-            filtered(standaloneRows).length > 0 ? reviewTable(filtered(standaloneRows), 'Learning objects copied on their own', 'Learning objects') : <Text as="p">No items match this filter.</Text>
+            filtered(standaloneRows).length > 0 ? (moduleCards ? moduleCardList(filtered(standaloneRows), 'Learning objects') : reviewTable(filtered(standaloneRows), 'Learning objects copied on their own', 'Learning objects')) : <Text as="p">No items match this filter.</Text>
           ) : (
             <div
               style={card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg } : undefined}
@@ -537,7 +677,7 @@ export default function LearningObjectReview({
       </Tabs>
       </>)}
       {/* The course as it will look after the copy, with the choice made for each item. */}
-      <CoursePreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} source={{ moduleIds, keepCurrent: merging, hidden: hiddenModules(dupes), scope, picked }} noteFor={previewNote} leftOut={(id) => rows.some((r) => itemIdOf(r) === id && choiceOf(r, choices) === 'leave')} />
+      <CoursePreviewModal cards={moduleCards} open={previewOpen} onClose={() => setPreviewOpen(false)} source={{ moduleIds, keepCurrent: merging, hidden: hiddenModules(dupes), scope, picked }} noteFor={previewNote} leftOut={(id) => rows.some((r) => itemIdOf(r) === id && choiceOf(r, choices) === 'leave')} />
       {!cut && <CriteriaModal open={criteriaOpen} onClose={() => setCriteriaOpen(false)} onRunCheck={() => setChecking(true)} running={checking} results={Object.fromEntries(readiness(rows, choices).map((x) => [x.rule.id, x.status]))} />}
       <AdminHelpModal open={helpOpen} items={(rows.filter((r) => r.hasSuggestion && !done(r)).length ? rows.filter((r) => r.hasSuggestion && !done(r)) : rows.filter((r) => r.hasSuggestion)).map((r) => ({ title: r.title, detail: r.findings.map((f) => f.detail).join(' ') || r.note?.text || '' }))} onClose={() => setHelpOpen(false)} onSend={() => { setMessageSent(true); onHelpSent() }} />
     </div>

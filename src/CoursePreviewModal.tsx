@@ -22,7 +22,7 @@ export type PreviewSource = {
 }
 
 export default function CoursePreviewModal({
-  open, onClose, source, noteFor, metaFor, leftOut,
+  open, onClose, source, noteFor, metaFor, leftOut, cards = false,
 }: {
   open: boolean
   onClose: () => void
@@ -32,6 +32,8 @@ export default function CoursePreviewModal({
   metaFor?: (itemId: string, meta: string) => ReactNode
   // Items left out of the copy show only their pill, with no findings.
   leftOut?: (itemId: string) => boolean
+  // Step 3 only, when its card view is on: the preview takes the same card look.
+  cards?: boolean
 }) {
   const t = useSurfaceTokens()
   const [tab, setTab] = useState(0)
@@ -65,10 +67,10 @@ export default function CoursePreviewModal({
           <Text as="div" color="secondary">{PREVIEW_NOTE}</Text>
           <Tabs onRequestTabChange={(_e, { index }) => setTab(index)}>
             <Tabs.Panel id="preview-modules" renderTitle="Modules" isSelected={tab === 0} padding="general.spaceMd 0 0 0">
-              <CoursePreview bare showFindings leftOut={leftOut} moduleIds={source.moduleIds} keepCurrent={source.keepCurrent} highlightNew hidden={source.hidden} noteFor={noteFor} metaFor={metaFor} onOpenItem={setItem} />
+              <CoursePreview cards={cards} bare showFindings leftOut={leftOut} moduleIds={source.moduleIds} keepCurrent={source.keepCurrent} highlightNew hidden={source.hidden} noteFor={noteFor} metaFor={metaFor} onOpenItem={setItem} />
             </Tabs.Panel>
             <Tabs.Panel id="preview-objects" renderTitle="Learning objects" isSelected={tab === 1} padding="general.spaceMd 0 0 0">
-              <ObjectsPreview bare showFindings leftOut={leftOut} scope={source.scope} picked={withPulledIn(source.picked)} keepCurrent={source.keepCurrent} noteFor={noteFor} onOpenItem={setItem} />
+              <ObjectsPreview cards={cards} bare showFindings leftOut={leftOut} scope={source.scope} picked={withPulledIn(source.picked)} keepCurrent={source.keepCurrent} noteFor={noteFor} onOpenItem={setItem} />
             </Tabs.Panel>
           </Tabs>
           </div>

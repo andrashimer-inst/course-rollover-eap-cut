@@ -14,6 +14,7 @@ import {
   Modal,
   CloseButton,
   Heading,
+  IconArrowOpenUpSolid,
   Tabs,
   Text,
   Tooltip,
@@ -277,7 +278,7 @@ export function ItemProblems({ itemId }: { itemId?: string }) {
       <Text as="div" weight="bold">What needs to be fixed</Text>
       {found.map((f, n) => (
         <div key={n} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
-          <StatusPill size="sm" color={f.rule.severity === 'critical' ? 'error' : 'warning'}>{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
+          <StatusPill size="sm" color="warning">{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
           <Text>{f.detail}</Text>
         </div>
       ))}
@@ -413,6 +414,7 @@ export default function ContentStep({
       <ChoiceCards
         name="content-scope"
         legend="Copy"
+        hideLegend
         value={scope ?? ''}
         onChange={(value) => setScope(value as Scope)}
         choices={[
@@ -587,10 +589,11 @@ function useThisCopyColors() {
 }
 
 // The same copy, listed by learning object instead of by module. Each type is a group. Every row says where it comes from.
-export function ObjectsPreview({ scope, picked, keepCurrent, description = '', headerExtra, bare = false, showFindings = false, leftOut, noteFor, onOpenItem }: { scope: Scope; picked: Picked; keepCurrent: boolean; description?: string; headerExtra?: ReactNode; bare?: boolean; showFindings?: boolean; leftOut?: (itemId: string) => boolean; noteFor?: (itemId: string) => ReactNode; onOpenItem?: (item: PreviewItem) => void }) {
+export function ObjectsPreview({ scope, picked, keepCurrent, description = '', headerExtra, bare = false, showFindings = false, leftOut, noteFor, onOpenItem, cards = false }: { cards?: boolean; scope: Scope; picked: Picked; keepCurrent: boolean; description?: string; headerExtra?: ReactNode; bare?: boolean; showFindings?: boolean; leftOut?: (itemId: string) => boolean; noteFor?: (itemId: string) => ReactNode; onOpenItem?: (item: PreviewItem) => void }) {
   const t = useSurfaceTokens()
   const legacy = useAppThemeKey() === 'legacy'
   const thisCopy = useThisCopyColors()
+  const rowFill = `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`
   const groups = SORTED_TYPES.filter((type) => type.id !== 'modules').map((type) => {
     const coming = (type.items.length ? type.items : [{ id: type.id, label: type.label }])
       .filter((i) => scope === 'whole' || picked[i.id])
@@ -630,24 +633,24 @@ export function ObjectsPreview({ scope, picked, keepCurrent, description = '', h
       {!bare && heading}
       {groups.length === 0 && <Text as="p" color="secondary">No learning objects are selected yet.</Text>}
       {groups.map(({ type, rows }) => (
-        <div key={type.id} style={{ border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: legacy ? undefined : t.radiusMd, overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm, padding: t.space.md, background: legacy ? 'transparent' : t.pageColor, color: t.textColor }}>
-            <span aria-hidden="true" style={{ display: 'inline-flex' }}>{TYPE_ICON[type.id]}</span>
-            <Text weight="bold">{type.label}</Text>
+        <div key={type.id} style={cards ? { background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusCardMd, boxShadow: legacy ? undefined : t.shadowResting, padding: t.space.lg, display: 'flex', flexDirection: 'column', gap: t.space.md } : { border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: legacy ? undefined : t.radiusMd, overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm, padding: cards ? 0 : t.space.md, background: cards || legacy ? 'transparent' : t.pageColor, color: t.textColor }}>
+            {!cards && <span aria-hidden="true" style={{ display: 'inline-flex' }}>{TYPE_ICON[type.id]}</span>}
+            {cards ? <Heading level="h4" as="h3">{type.label}</Heading> : <Text weight="bold">{type.label}</Text>}
             <Text size="small" color="secondary">({rows.length})</Text>
           </div>
           {rows.map((r) => (
             <div
               key={r.id}
               onClick={onOpenItem && PREVIEW_TYPES.has(type.id) ? () => openRow(type, r) : undefined}
-              style={{ display: 'flex', alignItems: 'center', gap: t.space.md, padding: t.space.md, borderTop: `${t.borderWidth} solid ${t.borderColor}`, cursor: onOpenItem && PREVIEW_TYPES.has(type.id) ? 'pointer' : undefined }}
+              style={{ display: 'flex', alignItems: 'center', gap: t.space.md, padding: t.space.md, ...(cards ? { background: rowFill, borderRadius: t.radiusCardSm } : { borderTop: `${t.borderWidth} solid ${t.borderColor}` }), cursor: onOpenItem && PREVIEW_TYPES.has(type.id) ? 'pointer' : undefined }}
             >
               <span style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
                 <Text as="div">{onOpenItem && PREVIEW_TYPES.has(type.id) ? <Link as="button" onClick={() => openRow(type, r)}>{r.label}</Link> : r.label}</Text>
                 <StatusPill
                   size="xs"
-                  color={r.origin === ORIGIN.earlier ? 'info' : 'neutral'}
-                  colors={r.origin === ORIGIN.incoming ? { ...thisCopy.pill, border: thisCopy.bar } : undefined}
+                  color={cards ? (r.origin === ORIGIN.incoming ? 'info' : 'neutral') : r.origin === ORIGIN.earlier ? 'info' : 'neutral'}
+                  colors={!cards && r.origin === ORIGIN.incoming ? { ...thisCopy.pill, border: thisCopy.bar } : undefined}
                 >
                   {r.origin}
                 </StatusPill>
@@ -664,7 +667,7 @@ export function ObjectsPreview({ scope, picked, keepCurrent, description = '', h
 
 // How the course looks with the modules that are copied: grey module bars with their items under them.
 export function CoursePreview({
-  moduleIds, keepCurrent, highlightNew, hidden, hiddenItems, noteFor, metaFor, title, titleSize = 'large', description, headerExtra, bare = false, showFindings = false, leftOut, onOpenItem,
+  moduleIds, keepCurrent, highlightNew, hidden, hiddenItems, noteFor, metaFor, title, titleSize = 'large', description, headerExtra, bare = false, showFindings = false, leftOut, onOpenItem, cards = false,
 }: {
   moduleIds: string[]
   keepCurrent: boolean
@@ -691,9 +694,12 @@ export function CoursePreview({
   leftOut?: (itemId: string) => boolean
   // When set, each item can be clicked to look at it.
   onOpenItem?: (item: PreviewItem) => void
+  // The card look of step 3: a white card for each module and its items as grey rows, with no colored bars.
+  cards?: boolean
 }) {
   const t = useSurfaceTokens()
   const legacy = useAppThemeKey() === 'legacy'
+  const rowFill = `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`
   // Each module opens and closes like an accordion. They start open.
   const [closed, setClosed] = useState<Record<string, boolean>>({})
   const toggleModule = (id: string) => setClosed({ ...closed, [id]: !closed[id] })
@@ -735,15 +741,23 @@ export function CoursePreview({
         {list.map((m) => (
           <div
             key={m.id}
-            style={{
+            style={cards ? {
+              background: t.containerColor,
+              border: `${t.borderWidth} solid ${t.borderColor}`,
+              borderRadius: t.radiusCardMd,
+              boxShadow: legacy ? undefined : t.shadowResting,
+              padding: t.space.lg,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: t.space.md,
+            } : {
               border: `${t.borderWidth} solid ${t.borderColor}`,
               borderRadius: legacy ? undefined : t.radiusMd,
               overflow: 'hidden',
             }}
           >
             {/* Modules that are copied get a blue bar. Modules already in the course keep the light grey bar. */}
-            {/* Modules that are copied get a blue bar. Modules already in the course keep the light grey bar. */}
-            <View as="div" background={legacy && !(m.isNew && highlightNew) ? 'secondary' : undefined}>
+            <View as="div" background={!cards && legacy && !(m.isNew && highlightNew) ? 'secondary' : undefined}>
               <button
                 type="button"
                 className="module-toggle"
@@ -757,24 +771,27 @@ export function CoursePreview({
                   display: 'flex',
                   alignItems: 'center',
                   gap: t.space.sm,
-                  padding: t.space.md,
+                  padding: cards ? 0 : t.space.md,
                   // New modules get the inverse bar, modules from an earlier copy the blue bar, modules in the course the grey one.
-                  ...(m.isNew && highlightNew
+                  ...(cards
+                    ? { background: 'transparent', color: t.textColor }
+                    : m.isNew && highlightNew
                     ? { background: thisCopy.bar, color: thisCopy.text }
                     : !m.isNew && m.source !== 'manual'
                       ? { background: t.linkColor, color: t.onColor }
                       : { background: legacy ? 'transparent' : t.pageColor, color: t.textColor }),
                 }}
               >
-                <span aria-hidden="true" style={{ display: 'inline-flex' }}>
+                {!cards && <span aria-hidden="true" style={{ display: 'inline-flex' }}>
                   {closed[m.id] ? <IconArrowOpenEndSolid /> : <IconArrowOpenDownSolid />}
-                </span>
-                <Text weight="bold" color={(m.isNew && highlightNew) || (!m.isNew && m.source !== 'manual') ? 'inherit' : undefined}>{m.label}</Text>
+                </span>}
+                {cards ? <Heading level="h4" as="h3">{m.label}</Heading> : <Text weight="bold" color={(m.isNew && highlightNew) || (!m.isNew && m.source !== 'manual') ? 'inherit' : undefined}>{m.label}</Text>}
                 {/* Each module says where it comes from, as a pill next to its name. On the blue bar the pill is white. */}
-                <StatusPill size="xs" color="neutral" colors={m.isNew && highlightNew ? thisCopy.pill : !m.isNew && m.source !== 'manual' ? { background: t.onColor, text: t.linkColor } : undefined}>
+                <StatusPill size="xs" color={cards && m.isNew ? 'info' : 'neutral'} colors={cards ? undefined : m.isNew && highlightNew ? thisCopy.pill : !m.isNew && m.source !== 'manual' ? { background: t.onColor, text: t.linkColor } : undefined}>
                   {m.isNew ? ORIGIN.incoming : m.source === 'manual' ? ORIGIN.manual : ORIGIN.earlier}
                 </StatusPill>
                 <span style={{ flex: 1 }} />
+                {cards && <span aria-hidden="true" style={{ display: 'inline-flex' }}>{closed[m.id] ? <IconArrowOpenDownSolid /> : <IconArrowOpenUpSolid />}</span>}
               </button>
             </View>
             {!closed[m.id] && m.entries.filter((e) => !hiddenItems?.has(e.itemId)).map((e) => (
@@ -786,7 +803,7 @@ export function CoursePreview({
                   alignItems: 'center',
                   gap: t.space.md,
                   padding: t.space.md,
-                  borderTop: `${t.borderWidth} solid ${t.borderColor}`,
+                  ...(cards ? { background: rowFill, borderRadius: t.radiusCardSm } : { borderTop: `${t.borderWidth} solid ${t.borderColor}` }),
                   cursor: onOpenItem && PREVIEW_KINDS.has(KIND_NAME[e.kind]) ? 'pointer' : undefined,
                 }}
               >
