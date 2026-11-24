@@ -263,7 +263,7 @@ export default function LearningObjectReview({
                                 <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : 'warning'}>
                                   {RULE_LABEL[f.rule.id] ?? f.rule.title}
                                 </StatusPill>
-                                <Text as="div">{f.detail}</Text>
+                                <Text as="div" color="secondary">{f.detail}</Text>
                               </div>
                             ))}
                             {r.findings.length === 0 && r.note && (
@@ -271,7 +271,7 @@ export default function LearningObjectReview({
                                 <StatusPill size="sm" color={r.note.decision === 'copy' ? 'success' : 'warning'}>
                                   {NOTE_LABEL[r.note.id] ?? 'Flagged by your team'}
                                 </StatusPill>
-                                <Text as="div">{r.note.author} left a note about this last term.</Text>
+                                <Text as="div" color="secondary">{r.note.author} left a note about this last term.</Text>
                               </div>
                             )}
                           </div>

@@ -281,7 +281,7 @@ export function ItemProblems({ itemId }: { itemId?: string }) {
       {found.map((f, n) => (
         <div key={n} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
           <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : 'warning'}>{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
-          <Text>{f.detail}</Text>
+          <Text color="secondary">{f.detail}</Text>
         </div>
       ))}
     </div>
