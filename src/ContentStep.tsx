@@ -35,6 +35,8 @@ import { THEMES, useAppThemeKey, useSurfaceTokens } from './appTheme'
 const MODULES = CONTENT_TYPES.find((c) => c.id === 'modules')!.items
 // The list to tick from: the single things (no list under them) first, then the rest, each part in alphabetical order.
 // One description for both views of the step 2 preview. It does not change with the choices.
+// Said on every Learning objects tab of the preview.
+const OBJECTS_NOTE = "These items aren't part of any module. They're copied on their own."
 const PREVIEW_DESCRIPTION = `The course as it will look after the copy. ${PREVIEW_NOTE}`
 
 const SORTED_TYPES = [...CONTENT_TYPES].sort((a, b) => Number(a.items.length > 0) - Number(b.items.length > 0) || a.label.localeCompare(b.label))
@@ -278,7 +280,7 @@ export function ItemProblems({ itemId }: { itemId?: string }) {
       <Text as="div" weight="bold">What needs to be fixed</Text>
       {found.map((f, n) => (
         <div key={n} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
-          <StatusPill size="sm" color="warning">{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
+          <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : 'warning'}>{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
           <Text>{f.detail}</Text>
         </div>
       ))}
@@ -562,7 +564,7 @@ export default function ContentStep({
           {previewTab === 0 ? (
             <CoursePreview moduleIds={comingModules.map((m) => m.id)} keepCurrent={keepCurrent} highlightNew hidden={hidden} description={PREVIEW_DESCRIPTION} headerExtra={viewSelect} onOpenItem={setOpenItem} />
           ) : (
-            <ObjectsPreview scope={scope} picked={picked} keepCurrent={keepCurrent} description={PREVIEW_DESCRIPTION} headerExtra={viewSelect} onOpenItem={setOpenItem} />
+            <ObjectsPreview scope={scope} picked={picked} keepCurrent={keepCurrent} description={`${PREVIEW_DESCRIPTION} ${OBJECTS_NOTE}`} headerExtra={viewSelect} onOpenItem={setOpenItem} />
           )}
         </div>
       )}
@@ -631,6 +633,7 @@ export function ObjectsPreview({ scope, picked, keepCurrent, description = '', h
       }}
     >
       {!bare && heading}
+      {bare && <Text as="div" color="secondary">{OBJECTS_NOTE}</Text>}
       {groups.length === 0 && <Text as="p" color="secondary">No learning objects are selected yet.</Text>}
       {groups.map(({ type, rows }) => (
         <div key={type.id} style={cards ? { background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusCardMd, boxShadow: legacy ? undefined : t.shadowResting, padding: t.space.lg, display: 'flex', flexDirection: 'column', gap: t.space.md } : { border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: legacy ? undefined : t.radiusMd, overflow: 'hidden' }}>

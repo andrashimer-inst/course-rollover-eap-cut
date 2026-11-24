@@ -67,6 +67,10 @@ const KIND_LABEL: Record<TypeId, string> = {
 // readiness criteria, so it goes away with them, and so do the whole-course rows.
 let cutMode = false
 export const setCutMode = (on: boolean) => { cutMode = on }
+// Every unused item says how many students opened or used it last term: none, or the exact number.
+const unusedDetail = (students: number) =>
+  students === 0 ? 'No student opened or used this last term.' : `Only ${students} ${students === 1 ? 'student' : 'students'} opened or used this last term.`
+
 const CUT_KEEPS = new Set(['unused', 'links', 'missing-links', 'a11y-critical', 'a11y-high', 'a11y-medium'])
 const inFlow = <T extends { rule: string }>(list: T[]) => (cutMode ? list.filter((h) => CUT_KEEPS.has(h.rule)) : list)
 
@@ -74,14 +78,14 @@ const inFlow = <T extends { rule: string }>(list: T[]) => (cutMode ? list.filter
 const HITS: Record<string, { rule: string; detail: string }[]> = {
   'assignments:1': [{ rule: 'links', detail: '1 link in the instructions points to the previous course and shows an error.' }],
   'assignments:3': [{ rule: 'missing-links', detail: 'The Turnitin link cannot be copied. Link it again after the copy.' }],
-  'assignments:4': [{ rule: 'unused', detail: 'Only 2 students submitted it last term.' }],
+  'assignments:4': [{ rule: 'unused', detail: unusedDetail(2) }],
   'assignments:2': [{ rule: 'a11y-medium', detail: 'Accessibility issue: the description uses light grey text on a white background, with too little color contrast.' }],
-  'quizzes:3': [{ rule: 'unused', detail: 'This quiz was never published last term, so no student took it.' }],
+  'quizzes:3': [{ rule: 'unused', detail: unusedDetail(0) }],
   'discussions:2': [
     { rule: 'missing-links', detail: 'The Lucid whiteboard link cannot be copied. Link it again after the copy.' },
     { rule: 'a11y-medium', detail: 'Accessibility issue: the prompt uses light grey text with too little color contrast.' },
   ],
-  'discussions:3': [{ rule: 'unused', detail: 'No student posted in this discussion last term.' }],
+  'discussions:3': [{ rule: 'unused', detail: unusedDetail(0) }],
   'pages:1': [
     { rule: 'missing-links', detail: 'The Panopto video link cannot be copied. Link it again after the copy.' },
     { rule: 'a11y-high', detail: '3 images on this page have no alt text.' },
@@ -96,18 +100,18 @@ const HITS: Record<string, { rule: string; detail: string }[]> = {
     { rule: 'a11y-high', detail: '4 images on this page have no alt text.' },
   ],
   'announcements:1': [{ rule: 'links', detail: '1 link points to the previous course and shows an error.' }],
-  'announcements:2': [{ rule: 'unused', detail: 'This announcement is about a guest talk from last term, and no student opened it.' }],
-  'announcements:3': [{ rule: 'unused', detail: 'It reminds students of a quiz date from last term, and no student opened it.' }],
-  'announcements:4': [{ rule: 'unused', detail: 'The new office hours are already on the welcome page, and no student opened this notice.' }],
-  'files:3': [{ rule: 'unused', detail: 'No student opened this file last term.' }],
-  'files:4': [{ rule: 'unused', detail: 'No student opened this file last term.' }],
+  'announcements:2': [{ rule: 'unused', detail: unusedDetail(0) }],
+  'announcements:3': [{ rule: 'unused', detail: unusedDetail(3) }],
+  'announcements:4': [{ rule: 'unused', detail: unusedDetail(1) }],
+  'files:3': [{ rule: 'unused', detail: unusedDetail(0) }],
+  'files:4': [{ rule: 'unused', detail: unusedDetail(0) }],
   'files:5': [
-    { rule: 'unused', detail: 'This 2023 file is in an old format, and no student opened it last term.' },
+    { rule: 'unused', detail: unusedDetail(0) },
     { rule: 'a11y-high', detail: '5 images in these slides have no alt text.' },
   ],
   'files:6': [{ rule: 'a11y-high', detail: '6 images in these slides have no alt text.' }],
   'files:7': [{ rule: 'a11y-critical', detail: 'This 4 minute video has no captions or transcript.' }],
-  'events:2': [{ rule: 'unused', detail: 'The date is from last term and no student opened the event.' }],
+  'events:2': [{ rule: 'unused', detail: unusedDetail(0) }],
   syllabus: [
     { rule: 'syllabus', detail: 'The syllabus has no text. Your account asks for at least 1 word.' },
     { rule: 'a11y-medium', detail: 'Accessibility issue: two sections use light grey text with too little color contrast.' },

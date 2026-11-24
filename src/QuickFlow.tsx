@@ -29,7 +29,7 @@ const WHAT_IT_MEANS: Record<string, string> = {
   'a11y-critical': "A video has no captions, so students who are deaf, hard of hearing or in a noisy place can't follow it.",
   links: 'A link points to the old course and shows an error after the copy.',
   'missing-links': "A link opens an LTI tool that Canvas can't connect during the copy. You link it again after the copy.",
-  unused: 'No student opened or used this item last term.',
+  unused: 'No students, or only a few, opened or used this item last term.',
 }
 
 function QuickCard({ number, title, description, action, children }: { number: number; title: string; description?: string; action?: ReactNode; children: ReactNode }) {

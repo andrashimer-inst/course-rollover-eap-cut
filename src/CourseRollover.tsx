@@ -350,7 +350,7 @@ export default function CourseRollover({
           {/* The two flows as cards under each other. Each has a radio button, an icon, a name and what it is for. The whole card picks it. */}
           <div role="radiogroup" aria-label="How do you want to copy your content?" style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
             {([
-              { value: 'quick', icon: <RocketInstUIIcon />, title: 'Quick flow', text: 'Everything on one page, in four short sections: choose the course, choose what to copy, decide what to do with what we found, and choose how the dates move. Best when you want to copy fast.' },
+              { value: 'quick', icon: <RocketInstUIIcon />, title: 'Quick flow', text: 'Everything on one page, in four short steps: choose the course, choose what to copy, decide what to do with what we found, and choose how the dates move. Best when you want to copy fast.' },
               { value: 'steps', icon: <ListOrderedInstUIIcon />, title: 'Step by step', text: 'Five steps with a review of every item. You check each finding, set the dates yourself and see a preview of your course before you copy. Best when you want to look at everything.' },
             ] as const).map((o) => {
               const on = flowPick === o.value

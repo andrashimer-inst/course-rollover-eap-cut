@@ -35,7 +35,8 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
   const [query, setQuery] = useState('')
   const [taught, setTaught] = useState('You')
   const [subAccount, setSubAccount] = useState(SUB_ACCOUNTS[3])
-  const [term, setTerm] = useState(ANY)
+  // The list starts on the latest term. The first term of the list is the latest.
+  const [term, setTerm] = useState(TERMS[0])
   const [sortBy, setSortBy] = useState<SortKey | null>(null)
   const [ascending, setAscending] = useState(true)
   const [page, setPage] = useState(1)

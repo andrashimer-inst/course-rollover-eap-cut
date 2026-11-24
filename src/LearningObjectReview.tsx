@@ -114,7 +114,11 @@ export default function LearningObjectReview({
   const matches = (r: ReviewRow, f: string) =>
     f === 'all' ? true : f === 'none' ? !r.hasSuggestion : f === 'found' ? r.hasSuggestion : r.findings.some((x) => `rule:${x.rule.id}` === f)
   const countOf = (list: ReviewRow[], f: string) => list.filter((r) => matches(r, f)).length
-  const filtered = (list: ReviewRow[]) => list.filter((r) => matches(r, filter))
+  // The second filter: has the item been reviewed? A row with nothing found counts as reviewed from the start.
+  const [reviewFilter, setReviewFilter] = useState<'all' | 'todo' | 'reviewed'>('all')
+  const reviewMatch = (r: ReviewRow, f: string) => f === 'all' || (f === 'reviewed' ? done(r) : !done(r))
+  const reviewCount = (list: ReviewRow[], f: string) => list.filter((r) => matches(r, filter) && reviewMatch(r, f)).length
+  const filtered = (list: ReviewRow[]) => list.filter((r) => matches(r, filter) && reviewMatch(r, reviewFilter))
   // Every kind of finding in the review, named like its pill.
   const kinds = [...new Map(rows.flatMap((r) => r.findings).map((f) => [f.rule.id, RULE_LABEL[f.rule.id] ?? f.rule.title])).entries()]
     .sort((a, b) => a[1].localeCompare(b[1]))
@@ -204,6 +208,8 @@ export default function LearningObjectReview({
   const bulkControls = (
     <>
             <Text weight="bold">{selected.length} selected</Text>
+            {/* The count stays at the start. The action and the two buttons sit at the end. */}
+            <div style={{ marginInlineStart: 'auto', display: 'flex', flexWrap: 'wrap', gap: t.space.sm, alignItems: 'center' }}>
             <div style={{ width: '16rem', maxWidth: '100%' }}>
               <SimpleSelect
                 renderLabel={<ScreenReaderContent>Bulk action</ScreenReaderContent>}
@@ -227,6 +233,7 @@ export default function LearningObjectReview({
               Reset choices
             </Button>
             <Button size="small" color="secondary" onClick={() => { setSelected([]); setBulk('') }}>Clear selection</Button>
+            </div>
     </>
   )
 
@@ -248,13 +255,12 @@ export default function LearningObjectReview({
                           <div>
                             {/* A green pill like the findings have, so a row with nothing found reads as fine at a glance. */}
                             <StatusPill size="sm" color="success">Nothing found</StatusPill>
-                            <Text as="div">It is copied as it is.</Text>
                           </div>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
                             {r.findings.map((f) => (
                               <div key={f.rule.id + f.detail}>
-                                <StatusPill size="sm" color="warning">
+                                <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : 'warning'}>
                                   {RULE_LABEL[f.rule.id] ?? f.rule.title}
                                 </StatusPill>
                                 <Text as="div">{f.detail}</Text>
@@ -362,19 +368,22 @@ export default function LearningObjectReview({
               {open && inGroup.map((r) => (
                 <div
                   key={r.id}
-                  style={{ background: rowFill, borderRadius: t.radiusCardSm, padding: t.space.md, display: 'flex', gap: t.space.sm, alignItems: 'center' }}
+                  style={{ background: rowFill, borderRadius: t.radiusCardSm, padding: t.space.md, display: 'flex', gap: t.space.sm, alignItems: 'flex-start' }}
                 >
-                  <div style={{ flex: '0 0 1.5rem', width: '1.5rem' }}>
+                  {/* The checkbox, the title and the action share the top line of the row. That line is as tall as the action field. */}
+                  <div style={{ flex: '0 0 1.5rem', width: '1.5rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center' }}>
                     <Checkbox
                       label={<ScreenReaderContent>{`Select ${r.title}`}</ScreenReaderContent>}
                       checked={selected.includes(r.id)}
                       onChange={() => toggle(r.id)}
                     />
                   </div>
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center' }}>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start' }}>
                     <div style={{ flex: '1 1 16rem', minWidth: 0, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
                       <div>
-                        <Text as="div" weight="bold">{r.title}</Text>
+                        <div style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'center' }}>
+                          <Text as="div" weight="bold">{r.title}</Text>
+                        </div>
                         <Text as="div" size="small" color="secondary">{r.kindLabel}</Text>
                         {r.note && <Text as="div" size="small" color="primary">Your team’s note: {r.note.text}</Text>}
                       </div>
@@ -533,13 +542,12 @@ export default function LearningObjectReview({
   // Only the kinds of finding the open tab has. A kind with no rows there is left out, unless it is the one chosen.
   const shownKinds = (list: ReviewRow[]) => kinds.filter(([id]) => countOf(list, `rule:${id}`) > 0 || filter === `rule:${id}`)
   const filterRow = (list: ReviewRow[], switchable = false) => (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', justifyContent: 'space-between' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm }}>
-        <Text weight="bold">Findings</Text>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-end', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: t.space.md }}>
         <div style={{ width: '18rem', maxWidth: '100%' }}>
           {shownKinds(list).length > 0 && <style>{`[id$="filter-rule-${shownKinds(list)[0][0]}"] { border-top: ${t.borderWidth} solid ${t.strokeBase}; }`}</style>}
           <SimpleSelect
-            renderLabel={<ScreenReaderContent>Filter by findings</ScreenReaderContent>}
+            renderLabel={<Text weight="bold">Findings</Text>}
             value={filter}
             onChange={(_e, { value }) => { setFilter(String(value)); setSelected([]) }}
           >
@@ -550,6 +558,17 @@ export default function LearningObjectReview({
             {shownKinds(list).map(([id, label]) => (
               <SimpleSelect.Option key={id} id={`filter-rule-${id}`} value={`rule:${id}`}>{`${label} (${countOf(list, `rule:${id}`)})`}</SimpleSelect.Option>
             ))}
+          </SimpleSelect>
+        </div>
+        <div style={{ width: '14rem', maxWidth: '100%' }}>
+          <SimpleSelect
+            renderLabel={<Text weight="bold">Review status</Text>}
+            value={reviewFilter}
+            onChange={(_e, { value }) => { setReviewFilter(String(value) as 'all' | 'todo' | 'reviewed'); setSelected([]) }}
+          >
+            <SimpleSelect.Option id="review-all" value="all">{`All (${reviewCount(list, 'all')})`}</SimpleSelect.Option>
+            <SimpleSelect.Option id="review-todo" value="todo">{`Not reviewed (${reviewCount(list, 'todo')})`}</SimpleSelect.Option>
+            <SimpleSelect.Option id="review-done" value="reviewed">{`Reviewed (${reviewCount(list, 'reviewed')})`}</SimpleSelect.Option>
           </SimpleSelect>
         </div>
       </div>
