@@ -1,5 +1,5 @@
 import { Checkbox, DateInput, SimpleSelect, Text } from '@instructure/ui/v11_7'
-import RadioWithContent from './RadioWithContent'
+import ChoiceCards from './ChoiceCards'
 import { useFlow } from './flow'
 import type { Opening } from './reviewCopyData'
 import { useAppThemeKey, useSurfaceTokens } from './appTheme'
@@ -34,7 +34,7 @@ export default function PublishCards({ opening, setOpening }: { opening: Opening
       }}
     >
       <Text weight="bold" size="large">Course publishing</Text>
-      <RadioWithContent
+      <ChoiceCards
         name="publish-mode"
         legend="Publishing method"
         value={opening.mode}
@@ -42,15 +42,15 @@ export default function PublishCards({ opening, setOpening }: { opening: Opening
         choices={[
           {
             value: 'self',
-            label: 'Publish manually',
-            content: <Text as="div" color="secondary">The course stays unpublished and hidden from students until you publish it.</Text>,
+            title: 'Publish manually',
+            text: 'The course stays unpublished and hidden from students until you publish it.',
           },
           {
             value: 'open',
-            label: 'Schedule publishing',
-            content: (
+            title: 'Schedule publishing',
+            text: "We'll publish your course on the date and at the time you choose. Until then, students can't see it.",
+            extra: (
               <>
-                <Text as="div" color="secondary">We'll publish your course on the date and at the time you choose. Until then, students can't see it.</Text>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start' }}>
                   <div style={{ width: '14rem', maxWidth: '100%' }}>
                     <DateInput

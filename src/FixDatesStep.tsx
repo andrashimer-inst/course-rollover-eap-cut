@@ -18,7 +18,7 @@ import {
 import DatePickerButton from './DatePickerButton'
 import CoursePreviewModal from './CoursePreviewModal'
 import type { PreviewSource } from './CoursePreviewModal'
-import RadioWithContent from './RadioWithContent'
+import ChoiceCards from './ChoiceCards'
 import FigmaAlert from './FigmaAlert'
 import type { ReactNode } from 'react'
 import StatusPill from './StatusPill'
@@ -269,25 +269,22 @@ export default function FixDatesStep({
   const modeCard = (
     <div style={{ ...cardStyle, boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: t.space.md, flex: 1 }}>
       <Text weight="bold" size="large">Date placement</Text>
-      <RadioWithContent
+      <ChoiceCards
         name="date-mode"
         legend="Method"
         value={state.mode}
         onChange={(value) => setMode(value as DateMode)}
         choices={MODES.map((m) => ({
           value: m.id,
-          label: m.title,
-          content: (
-            <>
-              <Text as="div" color="secondary">{m.body}</Text>
-              {m.id === 'clear' && (
-                <FigmaAlert variant="info" type="inline">
-                  All dates are cleared. Each item is listed on the course Settings page until you set a date.
-                </FigmaAlert>
-              )}
-              {m.id === 'calendar' && <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: t.space.xl }}>{startField}{endDate}</div>}
-            </>
-          ),
+          title: m.title,
+          text: m.body,
+          extra: m.id === 'clear' ? (
+            <FigmaAlert variant="info" type="inline">
+              All dates are cleared. Each item is listed on the course Settings page until you set a date.
+            </FigmaAlert>
+          ) : m.id === 'calendar' ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: t.space.xl }}>{startField}{endDate}</div>
+          ) : undefined,
         }))}
       />
     </div>

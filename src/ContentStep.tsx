@@ -26,7 +26,6 @@ import type { ContentType, ModuleEntry } from './courseContentData'
 import { currentMeta } from './dateNote'
 import { RULE_LABEL, findingsOf } from './reviewData'
 import FigmaAlert from './FigmaAlert'
-import RadioWithContent from './RadioWithContent'
 import ChoiceCards from './ChoiceCards'
 import SegmentedControl from './SegmentedControl'
 import StatusPill from './StatusPill'
@@ -411,7 +410,7 @@ export default function ContentStep({
         />
         </>
       ) : (
-      <RadioWithContent
+      <ChoiceCards
         name="content-scope"
         legend="Copy"
         value={scope ?? ''}
@@ -419,42 +418,37 @@ export default function ContentStep({
         choices={[
           {
             value: 'whole',
-            label: 'The whole course',
-            content: (
-              <>
-                <Text as="div" color="secondary">{`You'll copy ${wholeCount} ${wholeCount === 1 ? 'item' : 'items'}.`}</Text>
-                <FigmaAlert variant="warning" type="inline">
-                  The copy replaces the content that an earlier copy added to your course. Content you added yourself stays.
-                </FigmaAlert>
-              </>
+            title: 'The whole course',
+            text: `You'll copy ${wholeCount} ${wholeCount === 1 ? 'item' : 'items'}.`,
+            extra: (
+              <FigmaAlert variant="warning" type="inline">
+                The copy replaces the content that an earlier copy added to your course. Content you added yourself stays.
+              </FigmaAlert>
             ),
           },
           {
             value: 'part',
-            label: 'Part of it',
-            // The quick flow has nothing under this choice. The step-by-step flow asks how the copy fits with the course.
-            content: bare ? undefined : (
-              <>
-                <Text as="div" color="secondary">{`You can copy these types of content: ${partText}`}</Text>
-                <div>
-                  <SegmentedControl
-                    label="How should it be copied?"
-                    value={mode}
-                    onChange={(v) => setMode(v as CopyMode)}
-                    options={[
-                      { value: 'merge', label: 'Add to the current content' },
-                      { value: 'replace', label: 'Replace the copied content' },
-                    ]}
-                  />
-                  <div style={{ marginTop: t.space.sm }}>
-                    <Text as="div" size="small" color="secondary">
-                      {mode === 'replace'
-                        ? 'This replaces what an earlier copy added. The content you added yourself stays.'
-                        : 'This keeps everything that\'s in your course now, including earlier copies.'}
-                    </Text>
-                  </div>
+            title: 'Part of it',
+            text: `You can copy these types of content: ${partText}`,
+            extra: (
+              <div>
+                <SegmentedControl
+                  label="How should it be copied?"
+                  value={mode}
+                  onChange={(v) => setMode(v as CopyMode)}
+                  options={[
+                    { value: 'merge', label: 'Add to the current content' },
+                    { value: 'replace', label: 'Replace the copied content' },
+                  ]}
+                />
+                <div style={{ marginTop: t.space.sm }}>
+                  <Text as="div" size="small" color="secondary">
+                    {mode === 'replace'
+                      ? 'This replaces what an earlier copy added. The content you added yourself stays.'
+                      : 'This keeps everything that\'s in your course now, including earlier copies.'}
+                  </Text>
                 </div>
-              </>
+              </div>
             ),
           },
         ]}
