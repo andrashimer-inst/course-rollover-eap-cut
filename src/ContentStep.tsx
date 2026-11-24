@@ -564,7 +564,7 @@ export default function ContentStep({
           {previewTab === 0 ? (
             <CoursePreview moduleIds={comingModules.map((m) => m.id)} keepCurrent={keepCurrent} highlightNew hidden={hidden} description={PREVIEW_DESCRIPTION} headerExtra={viewSelect} onOpenItem={setOpenItem} />
           ) : (
-            <ObjectsPreview scope={scope} picked={picked} keepCurrent={keepCurrent} description={`${PREVIEW_DESCRIPTION} ${OBJECTS_NOTE}`} headerExtra={viewSelect} onOpenItem={setOpenItem} />
+            <ObjectsPreview scope={scope} picked={picked} keepCurrent={keepCurrent} description={PREVIEW_DESCRIPTION} headerExtra={viewSelect} onOpenItem={setOpenItem} />
           )}
         </div>
       )}
@@ -633,7 +633,8 @@ export function ObjectsPreview({ scope, picked, keepCurrent, description = '', h
       }}
     >
       {!bare && heading}
-      {bare && <Text as="div" color="secondary">{OBJECTS_NOTE}</Text>}
+      {/* Under the tabs: in a window and in step 5 the tabs are above this list, in step 2 they are part of the heading. */}
+      <Text as="div" color="secondary">{OBJECTS_NOTE}</Text>
       {groups.length === 0 && <Text as="p" color="secondary">No learning objects are selected yet.</Text>}
       {groups.map(({ type, rows }) => (
         <div key={type.id} style={cards ? { background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusCardMd, boxShadow: legacy ? undefined : t.shadowResting, padding: t.space.lg, display: 'flex', flexDirection: 'column', gap: t.space.md } : { border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: legacy ? undefined : t.radiusMd, overflow: 'hidden' }}>
