@@ -71,7 +71,7 @@ export function commentsFor(course: string): EducatorComment[] {
     {
       id: 'c5',
       area: 'Files',
-      item: 'Slides 2023 (old format)',
+      item: 'Slides 2023.pptx',
       text: "Replaced by the 2025 slides. Don't copy these.",
       author: 'Sam T., Teaching assistant',
       term: 'Fall 2025',

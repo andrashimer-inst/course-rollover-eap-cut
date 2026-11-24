@@ -111,7 +111,6 @@ const HITS: Record<string, { rule: string; detail: string }[]> = {
   ],
   'files:6': [{ rule: 'a11y-high', detail: '6 images in these slides have no alt text.' }],
   'files:7': [{ rule: 'a11y-critical', detail: 'This 4 minute video has no captions or transcript.' }],
-  'events:2': [{ rule: 'unused', detail: unusedDetail(0) }],
   syllabus: [
     { rule: 'syllabus', detail: 'The syllabus has no text. Your account asks for at least 1 word.' },
     { rule: 'a11y-medium', detail: 'Accessibility issue: two sections use light grey text with too little color contrast.' },

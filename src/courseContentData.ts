@@ -31,7 +31,7 @@ export const CONTENT_TYPES: ContentType[] = [
   { id: 'announcements', label: 'Announcements', items: list('announcements', ['Welcome', 'Guest speaker', 'Quiz 2 reminder', 'Office hours moved']) },
   { id: 'rubrics', label: 'Rubrics', items: list('rubrics', ['Reflection rubric', 'Presentation rubric']) },
   { id: 'outcomes', label: 'Outcomes', items: list('outcomes', ['Outcome 1: Analyze a case study', 'Outcome 2: Reflect on your own work', 'Outcome 3: Present a project to a client']) },
-  { id: 'files', label: 'Files', items: list('files', ['Syllabus.pdf', 'Case study 1.pdf', 'Case study 2.pdf', 'Outline template.docx', 'Slides 2023 (old format)', 'Slides week 2.pptx', 'Lab safety video.mp4']) },
+  { id: 'files', label: 'Files', items: list('files', ['Syllabus.pdf', 'Case study 1.pdf', 'Case study 2.pdf', 'Outline template.docx', 'Slides 2023.pptx', 'Slides week 2.pptx', 'Lab safety video.mp4']) },
   { id: 'events', label: 'Calendar Events', items: list('events', ['Guest speaker', 'Portfolio review day', 'Office hours', 'Final presentations']) },
 ]
 
