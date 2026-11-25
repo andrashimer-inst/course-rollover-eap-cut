@@ -273,9 +273,9 @@ export default function QuickFlow({
                 </Button>
               </div>
               {showKinds && (
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {kinds.map((k, n) => (
-                    <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: t.space.md, padding: `${t.space.sm} 0`, borderBlockStart: n ? `${t.borderWidth} solid ${t.borderColor}` : undefined }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+                  {kinds.map((k) => (
+                    <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: t.space.md, padding: `${t.space.sm} ${t.space.md}`, background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusCardSm }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.xs }}>
                         <Text>{k.label}: </Text><Text weight="bold">{k.count}</Text>
                         <Tooltip placement="top" renderTip={WHAT_IT_MEANS[k.id] ?? 'Something we noticed in an item.'}>
