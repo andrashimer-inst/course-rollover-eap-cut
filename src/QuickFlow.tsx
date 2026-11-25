@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Checkbox, DateInput, IconArrowOpenDownLine, IconArrowOpenUpLine, IconButton, IconInfoLine, IconSearchLine, ListOrderedInstUIIcon, Metric, RadioInput, ScreenReaderContent, Spinner, Text, TextInput, Tooltip } from '@instructure/ui/v11_7'
+import { Button, Checkbox, DateInput, Heading, IconArrowOpenDownLine, IconArrowOpenUpLine, IconButton, IconInfoLine, IconSearchLine, ListOrderedInstUIIcon, Metric, RadioInput, ScreenReaderContent, Spinner, Text, TextInput, Tooltip } from '@instructure/ui/v11_7'
 import type { ReactNode } from 'react'
 import { SOURCE_COURSES } from './courseListData'
 import StatusPill from './StatusPill'
@@ -278,7 +278,7 @@ export default function QuickFlow({
                   {kinds.map((k) => (
                     <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: t.space.md, padding: `${t.space.sm} ${t.space.md}`, background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusCardSm }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.xs }}>
-                        <Text>{k.label}: </Text><Text weight="bold">{k.count}</Text>
+                        <Text>{k.label}: </Text><Heading level="h3" as="span">{k.count}</Heading>
                         <Tooltip placement="top" renderTip={WHAT_IT_MEANS[k.id] ?? 'Something we noticed in an item.'}>
                           <IconButton size="small" withBackground={false} withBorder={false} screenReaderLabel={`What does ${k.label} mean?`}>
                             <IconInfoLine />
