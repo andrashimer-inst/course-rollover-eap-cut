@@ -1,20 +1,15 @@
 import { useMemo, useState } from 'react'
-import { IconSearchLine, Pagination, RadioInput, ScreenReaderContent, SimpleSelect, Table, Text, TextInput } from '@instructure/ui/v11_7'
+import { IconSearchLine, Pagination, RadioInput, ScreenReaderContent, SimpleSelect, Text, TextInput } from '@instructure/ui/v11_7'
+import StatusPill from './StatusPill'
 import { SOURCE_COURSES, SUB_ACCOUNTS, TERMS } from './courseListData'
 import type { SourceCourse } from './courseListData'
 import AutoSelect from './AutoSelect'
 import { useAppThemeKey, useSurfaceTokens } from './appTheme'
 
 // Step 1 of the copy wizard: pick the course to copy from. One course can be chosen, so each row has a radio button.
-// The list shows 20 courses a page. It can be searched and filtered by who taught it, and the term. Clicking a column title sorts the list.
+// The list shows 5 courses a page, as cards like the quick flow has. It can be searched and filtered by who taught it, and the term.
 
-const noFill = { background: 'transparent' }
-
-type SortKey = 'name' | 'teacher' | 'term' | 'time'
-
-const PAGE_SIZE = 20
-// Only the real courses fill the first page. The pages after it repeat the list as placeholders, to show the paging.
-const DUMMY_PAGES = 12
+const PAGE_SIZE = 5
 const taughtByYou = (c: SourceCourse) => c.teachers.includes('You')
 const ANY = 'any'
 // Everyone who teaches a course in the list: "You" first, then the other teachers by name.
@@ -37,8 +32,6 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
   const [subAccount, setSubAccount] = useState(SUB_ACCOUNTS[3])
   // The list starts on the latest term. The first term of the list is the latest.
   const [term, setTerm] = useState(TERMS[0])
-  const [sortBy, setSortBy] = useState<SortKey | null>(null)
-  const [ascending, setAscending] = useState(true)
   const [page, setPage] = useState(1)
 
   const shown = useMemo(() => {
@@ -52,33 +45,13 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
     })
   }, [query, taught, term, subAccount])
 
-  const rows = useMemo(() => {
-    if (!sortBy) return shown
-    const value = (c: SourceCourse) =>
-      sortBy === 'name' ? c.name.toLowerCase() : sortBy === 'teacher' ? c.teachers.join(', ').toLowerCase() : sortBy === 'term' ? TERMS.indexOf(c.term) : Date.parse(c.date)
-    const sorted = [...shown].sort((a, b) => (value(a) > value(b) ? 1 : value(a) < value(b) ? -1 : 0))
-    return ascending ? sorted : sorted.reverse()
-  }, [shown, sortBy, ascending])
+  const rows = shown
 
-  const pageCount = rows.length > PAGE_SIZE ? DUMMY_PAGES : 1
-  const total = pageCount > 1 ? pageCount * PAGE_SIZE : rows.length
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE))
+  const total = rows.length
   const current = Math.min(page, pageCount)
   const first = (current - 1) * PAGE_SIZE
-  const pageRows = pageCount === 1
-    ? rows
-    : Array.from({ length: PAGE_SIZE }, (_, i) => rows[(first + i) % rows.length])
-
-  const sortProps = (key: SortKey) => ({
-    onRequestSort: () => {
-      setPage(1)
-      if (sortBy === key) setAscending(!ascending)
-      else {
-        setSortBy(key)
-        setAscending(true)
-      }
-    },
-    sortDirection: sortBy === key ? (ascending ? ('ascending' as const) : ('descending' as const)) : ('none' as const),
-  })
+  const pageRows = rows.slice(first, first + PAGE_SIZE)
 
   const filter = (label: string, value: string, set: (v: string) => void, options: { id: string; label: string }[]) => (
     <div style={{ flex: '1 1 12rem', minWidth: 0 }}>
@@ -135,8 +108,6 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
         <Text as="p">No course matches. Clear the search or a filter to see more.</Text>
       ) : (
         <div
-          role="radiogroup"
-          aria-label="Course to copy from"
           style={
             card
               ? {
@@ -148,59 +119,39 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
               : undefined
           }
         >
-          {/* The list scrolls inside the card. The header row stays in view while it does. */}
-          <style>{`
-            .course-scroll thead th { position: sticky; top: 0; z-index: 10; background: ${themed ? t.containerColor : t.pageColor}; box-shadow: inset 0 -${t.borderWidth} 0 ${t.borderColor}; }
-            .course-scroll table { table-layout: fixed; width: 100%; }
-            .course-scroll th:first-child, .course-scroll td:first-child { width: 2.75rem; padding-inline-end: 0; }
-            .course-scroll tbody tr { cursor: pointer; }
-            .course-scroll tbody tr:hover td { background: color-mix(in srgb, ${t.textColor} 6%, transparent); }
-            .course-scroll tbody tr[data-selected="true"] td { background: color-mix(in srgb, ${t.linkColor} 12%, transparent); }
-            .course-scroll tbody tr[data-selected="true"] td:first-child { box-shadow: inset 0.25rem 0 0 ${t.linkColor}; }
-          `}</style>
-          <div
-            className="course-scroll"
-          >
-          <Table caption={() => 'Courses you can copy from'} themeOverride={noFill}>
-            <Table.Head themeOverride={noFill}>
-              <Table.Row themeOverride={noFill}>
-                <Table.ColHeader themeOverride={noFill} id="pick"><ScreenReaderContent>Select</ScreenReaderContent></Table.ColHeader>
-                <Table.ColHeader themeOverride={noFill} id="name" {...sortProps('name')}>Course</Table.ColHeader>
-                <Table.ColHeader themeOverride={noFill} id="teacher" {...sortProps('teacher')}>Taught by</Table.ColHeader>
-                <Table.ColHeader themeOverride={noFill} id="term" {...sortProps('term')}>Term</Table.ColHeader>
-                <Table.ColHeader themeOverride={noFill} id="time" {...sortProps('time')}>Last updated</Table.ColHeader>
-              </Table.Row>
-            </Table.Head>
-            <Table.Body themeOverride={noFill}>
-              {pageRows.map((c, i) => (
-                <Table.Row
-                  themeOverride={noFill}
-                  key={`${current}-${i}`}
-                  data-selected={selected === c.name}
+          {/* Each course is a white card with a radio. The chosen one gets the blue tint and border, like the quick flow. */}
+          <div role="radiogroup" aria-label="Course to copy from" style={{ display: 'flex', flexDirection: 'column', gap: t.space.md, padding: '0.25rem' }}>
+            {pageRows.map((c) => {
+              const on = selected === c.name
+              return (
+                <div
+                  key={c.name}
                   onClick={() => onSelect(c.name)}
+                  style={{
+                    display: 'flex',
+                    gap: t.space.md,
+                    alignItems: 'flex-start',
+                    padding: t.space.lg,
+                    borderRadius: t.radiusCardMd,
+                    cursor: 'pointer',
+                    background: on ? `color-mix(in srgb, ${t.linkColor} 8%, ${t.containerColor})` : t.containerColor,
+                    border: `${on ? '0.125rem' : t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                  }}
                 >
-                  <Table.Cell themeOverride={noFill}>
-                    <RadioInput
-                      name="source-course"
-                      size="small"
-                      value={c.name}
-                      checked={selected === c.name}
-                      onChange={() => onSelect(c.name)}
-                      label={<ScreenReaderContent>{`Copy from ${c.name}`}</ScreenReaderContent>}
-                    />
-                  </Table.Cell>
-                  <Table.Cell themeOverride={noFill}>
+                  <div style={{ flex: '0 0 1.5rem', width: '1.5rem', paddingBlockStart: '0.125rem' }}>
+                    <RadioInput size="small" name="source-course" value={c.name} checked={on} onChange={() => onSelect(c.name)} label={<ScreenReaderContent>{`Copy from ${c.name}`}</ScreenReaderContent>} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm, minWidth: 0 }}>
                     <Text weight="bold">{c.name}</Text>
-                    <Text as="div" size="small" color="secondary">{c.code}</Text>
-                    <Text as="div" size="small" color="secondary">SIS ID: {c.sisId}</Text>
-                  </Table.Cell>
-                  <Table.Cell themeOverride={noFill}>{c.teachers.join(', ')}</Table.Cell>
-                  <Table.Cell themeOverride={noFill}>{c.term}</Table.Cell>
-                  <Table.Cell themeOverride={noFill}>{c.date}</Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
+                    <Text as="div" size="small" color="secondary">{[c.code, c.term, `SIS ID: ${c.sisId}`, `Last updated ${c.date}`].join('  •  ')}</Text>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.sm, alignItems: 'center' }}>
+                      <StatusPill size="xs" color="neutral">{c.subAccount}</StatusPill>
+                      <Text size="small" color="secondary">Taught by {c.teachers.join(', ')}</Text>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
           </div>
           {pageCount > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', paddingBlockStart: t.space.lg }}>

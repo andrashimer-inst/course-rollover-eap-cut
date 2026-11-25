@@ -311,6 +311,13 @@ export default function FixDatesStep({
       <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
         <style>{`
           .dates-table table { table-layout: fixed; width: 100%; }
+          /* Each item is a card with an outline and no shadow: the cells of a row share the border and the round corners. */
+          .dates-table table { border-collapse: separate; border-spacing: 0 ${t.space.md}; }
+          .dates-table tbody tr { border: 0 !important; }
+          .dates-table tbody td { border-block: ${t.borderWidth} solid ${t.borderColor}; background: ${t.containerColor} !important; }
+          .dates-table tbody td:first-child { border-inline-start: ${t.borderWidth} solid ${t.borderColor}; border-start-start-radius: ${t.radiusCardMd}; border-end-start-radius: ${t.radiusCardMd}; padding-inline-start: ${t.space.lg}; }
+          .dates-table tbody td:last-child { border-inline-end: ${t.borderWidth} solid ${t.borderColor}; border-start-end-radius: ${t.radiusCardMd}; border-end-end-radius: ${t.radiusCardMd}; padding-inline-end: ${t.space.lg}; }
+          .dates-table thead th { border-block-end: 0 !important; }
           .dates-table th:nth-child(1) { width: 30%; }
           .dates-table th:nth-child(2), .dates-table th:nth-child(3), .dates-table th:nth-child(4) { width: 23.3333%; }
           .dates-keep th:nth-child(1) { width: 50%; }
@@ -386,7 +393,7 @@ export default function FixDatesStep({
                       <Table.Cell themeOverride={noFill}>
                         <DateBlock first label={r.item.kind === 'Event' ? 'Date' : 'Due'}>
                         {/* The date the item ends up on. The calendar button changes it by hand. */}
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: t.space.sm }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             {r.needsDecision && !r.choice ? (
                               <Text color="secondary">Not fixed yet</Text>
@@ -417,7 +424,7 @@ export default function FixDatesStep({
                                 tabIndex={0}
                                 role="img"
                                 aria-label={r.finalClosed ? 'Not fixed yet' : 'Fixed'}
-                                style={{ display: 'inline-flex', paddingBlockStart: '0.25rem', color: r.finalClosed ? t.warningTextColor : t.successTextColor }}
+                                style={{ display: 'inline-flex', color: r.finalClosed ? t.warningTextColor : t.successTextColor }}
                               >
                                 {r.finalClosed ? <CircleAlertInstUIIcon /> : <CircleCheckInstUIIcon />}
                               </span>
@@ -439,7 +446,7 @@ export default function FixDatesStep({
                         </DateBlock>
                         {r.subs.map((sb) => (
                           <DateBlock key={sb.id} label={sb.label}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: t.space.sm }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm }}>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 {sb.needsDecision && !sb.choice ? (
                                   <Text color="secondary">Not fixed yet</Text>
@@ -460,7 +467,7 @@ export default function FixDatesStep({
                                     tabIndex={0}
                                     role="img"
                                     aria-label={sb.finalClosed ? 'Not fixed yet' : 'Fixed'}
-                                    style={{ display: 'inline-flex', paddingBlockStart: '0.25rem', color: sb.finalClosed ? t.warningTextColor : t.successTextColor }}
+                                    style={{ display: 'inline-flex', color: sb.finalClosed ? t.warningTextColor : t.successTextColor }}
                                   >
                                     {sb.finalClosed ? <CircleAlertInstUIIcon /> : <CircleCheckInstUIIcon />}
                                   </span>
@@ -511,7 +518,7 @@ export default function FixDatesStep({
                       </Table.Cell>
                       <Table.Cell themeOverride={noFill}>
                         <DateBlock first label={item.kind === 'Event' ? 'Date' : 'Due'}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: t.space.sm }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm }}>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             {date ? (
                               <>
@@ -534,7 +541,7 @@ export default function FixDatesStep({
                               tabIndex={0}
                               role="img"
                               aria-label={date ? (closedName(date) ? 'On a non-working day' : 'Dated') : 'No date yet'}
-                              style={{ display: 'inline-flex', paddingBlockStart: '0.25rem', color: date && !closedName(date) ? t.successTextColor : t.warningTextColor }}
+                              style={{ display: 'inline-flex', color: date && !closedName(date) ? t.successTextColor : t.warningTextColor }}
                             >
                               {date && !closedName(date) ? <CircleCheckInstUIIcon /> : <CircleAlertInstUIIcon />}
                             </span>

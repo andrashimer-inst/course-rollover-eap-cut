@@ -280,7 +280,7 @@ export function ItemProblems({ itemId }: { itemId?: string }) {
       <Text as="div" weight="bold">What needs to be fixed</Text>
       {found.map((f, n) => (
         <div key={n} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
-          <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : 'warning'}>{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
+          <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : f.rule.id === 'unused' ? 'neutral' : 'warning'}>{RULE_LABEL[f.rule.id] ?? f.rule.title}</StatusPill>
           <Text color="secondary">{f.detail}</Text>
         </div>
       ))}
@@ -484,20 +484,49 @@ export default function ContentStep({
               {/* The same count as the first card in step 3: modules hold items, so they are not counted themselves. */}
               <Text as="div" color="secondary" aria-live="polite">{itemCount} {itemCount === 1 ? 'item' : 'items'} will be copied</Text>
             </div>
-            <Checkbox
-              label="Select all"
-              checked={allCount === allKeys.length}
-              indeterminate={allCount > 0 && allCount < allKeys.length}
-              onChange={() => setKeys(allKeys, allCount < allKeys.length)}
-            />
-            {SORTED_TYPES.map((type) => {
-              const ks = keys(type)
-              const n = countPicked(type, picked)
-              const expanded = !!open[type.id]
-              return (
-                <div key={type.id} style={{ borderTop: `${t.borderWidth} solid ${t.borderColor}`, marginTop: t.space.sm, paddingTop: t.space.sm }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm }}>
-                    <span style={{ width: '2rem', flexShrink: 0 }}>
+            {/* Each type is a card, with its items as grey rows inside, like the course preview. Select all is a plain checkbox above them. */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
+              <div>
+                <Checkbox
+                  label="Select all"
+                  checked={allCount === allKeys.length}
+                  indeterminate={allCount > 0 && allCount < allKeys.length}
+                  onChange={() => setKeys(allKeys, allCount < allKeys.length)}
+                />
+              </div>
+              {SORTED_TYPES.map((type) => {
+                const ks = keys(type)
+                const n = countPicked(type, picked)
+                const expanded = !!open[type.id]
+                const rowFill = `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`
+                return (
+                  <div
+                    key={type.id}
+                    style={{
+                      background: t.containerColor,
+                      border: `${t.borderWidth} solid ${t.borderColor}`,
+                      borderRadius: t.radiusCardMd,
+                      padding: t.space.md,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: t.space.sm,
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: t.space.sm, minHeight: '2rem' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Checkbox
+                          label={
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.sm }}>
+                              {TYPE_ICON[type.id]}
+                              {type.label}
+                              {type.items.length > 0 && ` (${type.items.length})`}
+                            </span>
+                          }
+                          checked={n === ks.length}
+                          indeterminate={n > 0 && n < ks.length}
+                          onChange={() => setKeys(ks, n < ks.length)}
+                        />
+                      </div>
                       {type.items.length > 0 && (
                         <IconButton
                           size="small"
@@ -507,53 +536,38 @@ export default function ContentStep({
                           aria-expanded={expanded}
                           onClick={() => setOpen({ ...open, [type.id]: !expanded })}
                         >
-                          {expanded ? <IconArrowOpenDownSolid /> : <IconArrowOpenEndSolid />}
+                          {expanded ? <IconArrowOpenUpSolid /> : <IconArrowOpenDownSolid />}
                         </IconButton>
                       )}
-                    </span>
-                    <Checkbox
-                      label={
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.sm }}>
-                          {TYPE_ICON[type.id]}
-                          {type.label}
-                          {type.items.length > 0 && ` (${type.items.length})`}
-                        </span>
-                      }
-                      checked={n === ks.length}
-                      indeterminate={n > 0 && n < ks.length}
-                      onChange={() => setKeys(ks, n < ks.length)}
-                    />
-                  </div>
-                  {expanded && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm, padding: `${t.space.sm} 0 ${t.space.sm} 4.5rem` }}>
-                      {type.items.map((item) => {
-                        const from = pulled[item.id]
-                        const box = (
-                          <Checkbox
-                            label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.sm }}>{TYPE_ICON[type.id]}{item.label}</span>}
-                            checked={!!picked[item.id]}
-                            disabled={!!from}
-                            onChange={() => setKeys([item.id], !picked[item.id])}
-                          />
-                        )
-                        // A disabled box gets no hover, so the tooltip sits on a wrapper that can also take focus.
-                        return from ? (
-                          <Tooltip
-                            key={item.id}
-                            renderTip={`Part of ${from.map((n) => `“${n}”`).join(' and ')}, so it is copied with the module. To leave it out, untick the module.`}
-                            placement="top start"
-                          >
-                            <span tabIndex={0} style={{ display: 'inline-block', width: 'fit-content' }}>{box}</span>
-                          </Tooltip>
-                        ) : (
-                          <div key={item.id}>{box}</div>
-                        )
-                      })}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                    {expanded && type.items.map((item) => {
+                      const from = pulled[item.id]
+                      const box = (
+                        <Checkbox
+                          label={<span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.sm }}>{TYPE_ICON[type.id]}{item.label}</span>}
+                          checked={!!picked[item.id]}
+                          disabled={!!from}
+                          onChange={() => setKeys([item.id], !picked[item.id])}
+                        />
+                      )
+                      const row = (child: ReactNode) => <div key={item.id} style={{ background: rowFill, borderRadius: t.radiusCardSm, padding: t.space.md }}>{child}</div>
+                      // A disabled box gets no hover, so the tooltip sits on a wrapper that can also take focus.
+                      return from ? (
+                        <Tooltip
+                          key={item.id}
+                          renderTip={`Part of ${from.map((n) => `“${n}”`).join(' and ')}, so it is copied with the module. To leave it out, untick the module.`}
+                          placement="top start"
+                        >
+                          <span tabIndex={0} style={{ display: 'block' }}>{row(box)}</span>
+                        </Tooltip>
+                      ) : (
+                        row(box)
+                      )
+                    })}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
@@ -591,7 +605,7 @@ function useThisCopyColors() {
 }
 
 // The same copy, listed by learning object instead of by module. Each type is a group. Every row says where it comes from.
-export function ObjectsPreview({ scope, picked, keepCurrent, description = '', headerExtra, bare = false, showFindings = false, leftOut, noteFor, onOpenItem, cards = false }: { cards?: boolean; scope: Scope; picked: Picked; keepCurrent: boolean; description?: string; headerExtra?: ReactNode; bare?: boolean; showFindings?: boolean; leftOut?: (itemId: string) => boolean; noteFor?: (itemId: string) => ReactNode; onOpenItem?: (item: PreviewItem) => void }) {
+export function ObjectsPreview({ scope, picked, keepCurrent, description = '', headerExtra, bare = false, showFindings = false, leftOut, noteFor, onOpenItem, cards = true }: { cards?: boolean; scope: Scope; picked: Picked; keepCurrent: boolean; description?: string; headerExtra?: ReactNode; bare?: boolean; showFindings?: boolean; leftOut?: (itemId: string) => boolean; noteFor?: (itemId: string) => ReactNode; onOpenItem?: (item: PreviewItem) => void }) {
   const t = useSurfaceTokens()
   const legacy = useAppThemeKey() === 'legacy'
   const thisCopy = useThisCopyColors()
@@ -671,7 +685,7 @@ export function ObjectsPreview({ scope, picked, keepCurrent, description = '', h
 
 // How the course looks with the modules that are copied: grey module bars with their items under them.
 export function CoursePreview({
-  moduleIds, keepCurrent, highlightNew, hidden, hiddenItems, noteFor, metaFor, title, titleSize = 'large', description, headerExtra, bare = false, showFindings = false, leftOut, onOpenItem, cards = false,
+  moduleIds, keepCurrent, highlightNew, hidden, hiddenItems, noteFor, metaFor, title, titleSize = 'large', description, headerExtra, bare = false, showFindings = false, leftOut, onOpenItem, cards = true,
 }: {
   moduleIds: string[]
   keepCurrent: boolean
@@ -698,7 +712,7 @@ export function CoursePreview({
   leftOut?: (itemId: string) => boolean
   // When set, each item can be clicked to look at it.
   onOpenItem?: (item: PreviewItem) => void
-  // The card look of step 3: a white card for each module and its items as grey rows, with no colored bars.
+  // The card look: a white card for each module and its items as grey rows, with no colored bars. On by default; step 3 turns it off with its table view.
   cards?: boolean
 }) {
   const t = useSurfaceTokens()

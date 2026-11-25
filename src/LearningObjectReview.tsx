@@ -87,7 +87,7 @@ export default function LearningObjectReview({
   // The cut flow has no criteria and no readiness check, and no general items (they all come from the criteria).
   const { cut } = useFlow()
   // The modules and learning objects tabs share two looks: the table, and a card for each module or type.
-  const [moduleCards, setModuleCards] = useState(false)
+  const [moduleCards, setModuleCards] = useState(true)
   const [checking, setChecking] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [criteriaOpen, setCriteriaOpen] = useState(false)
@@ -260,7 +260,7 @@ export default function LearningObjectReview({
                           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
                             {r.findings.map((f) => (
                               <div key={f.rule.id + f.detail}>
-                                <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : 'warning'}>
+                                <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : f.rule.id === 'unused' ? 'neutral' : 'warning'}>
                                   {RULE_LABEL[f.rule.id] ?? f.rule.title}
                                 </StatusPill>
                                 <Text as="div" color="secondary">{f.detail}</Text>

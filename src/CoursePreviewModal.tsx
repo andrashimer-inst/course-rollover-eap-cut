@@ -22,7 +22,7 @@ export type PreviewSource = {
 }
 
 export default function CoursePreviewModal({
-  open, onClose, source, noteFor, metaFor, leftOut, cards = false,
+  open, onClose, source, noteFor, metaFor, leftOut, cards = true,
 }: {
   open: boolean
   onClose: () => void
@@ -32,7 +32,7 @@ export default function CoursePreviewModal({
   metaFor?: (itemId: string, meta: string) => ReactNode
   // Items left out of the copy show only their pill, with no findings.
   leftOut?: (itemId: string) => boolean
-  // Step 3 only, when its card view is on: the preview takes the same card look.
+  // The card look. Step 3 turns it off when its table view is on.
   cards?: boolean
 }) {
   const t = useSurfaceTokens()
