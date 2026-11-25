@@ -273,7 +273,8 @@ export default function QuickFlow({
                 </Button>
               </div>
               {showKinds && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: t.space.sm }}>
+                  {/* Three cards next to each other, then three below them, all the same width. */}
                   {kinds.map((k) => (
                     <div key={k.id} style={{ display: 'flex', alignItems: 'center', gap: t.space.md, padding: `${t.space.sm} ${t.space.md}`, background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}`, borderRadius: t.radiusCardSm }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: t.space.xs }}>
