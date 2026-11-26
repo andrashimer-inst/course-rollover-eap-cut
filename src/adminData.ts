@@ -46,16 +46,18 @@ export const totalOf = (set: CriteriaSet) => set.counts.reduce((n, c) => n + c, 
 // The criteria of a set by name, in the order of the areas.
 export const criteriaTitles = (set: CriteriaSet): string[] =>
   CRITERIA.flatMap((a, i) => a.settings.filter((x) => x.on).slice(0, set.counts[i]).map((x) => x.title))
-// How many criteria the course meets: all when it is ready, none when it has not started, and the rest short of the ones it has not met.
+// How many criteria the course meets: none when it has not started, and the others short of the ones they have not met.
 export const metOf = (c: AdminCourse, set: CriteriaSet) => {
   const total = totalOf(set)
-  return c.state === 'Ready' ? total : c.state === 'Not started' ? 0 : Math.max(1, total - c.gap)
+  // A ready course can still miss a criterion or two: ready means the copy is done, not that every criterion is met.
+  return c.state === 'Ready' ? total - (c.gap % 3) : c.state === 'Not started' ? 0 : Math.max(1, total - c.gap)
 }
 
 // The teachers of the wizard's list say "You" for the signed-in teacher. The admin sees a name.
 const nameOf = (n: string) => (n === 'You' ? EDUCATORS[0] : n)
 
-const STEPS = ['Select content', 'Learning object review', 'Set dates', 'Review and copy']
+// The five steps of the copy wizard.
+const STEPS = ['Select course', 'Select content', 'Learning object review', 'Set dates', 'Review and copy']
 const HELP = ['a broken link in Week 1', 'a Publisher e-book licence', 'dates that land on a non-working day', 'a missing quiz tool']
 // A fixed pattern, so the page looks the same every time it opens.
 const PATTERN: SetupState[] = ['Needs help', 'Stuck', 'Ready', 'In progress', 'Not started', 'Ready', 'In progress', 'Stuck', 'Ready', 'Needs help', 'Not started', 'In progress', 'Ready', 'Not started', 'Stuck', 'Ready']
@@ -73,7 +75,8 @@ export const ADMIN_COURSES: AdminCourse[] = PICK.map((c, i) => {
   const open = state === 'In progress' || state === 'Stuck' || state === 'Needs help'
   // Help is asked for in the review (step 3), so a course that needs help is at step 3 or further. It may have moved on after the message.
   // Once the copy is done the course is ready, and Ready takes the place of Needs help.
-  const at = state === 'Needs help' ? 1 + (i % 3) : i % STEPS.length
+  // A copy that is stuck can be at any step: it was started and saved, and nobody came back to it. One that is in progress has chosen its course.
+  const at = state === 'Needs help' ? 2 + (i % 3) : state === 'Stuck' ? i % STEPS.length : 1 + (i % (STEPS.length - 1))
   const step = STEPS[at]
   const where =
     state === 'Ready' ? `Opens ${OPENS[i % OPENS.length]}`
@@ -91,7 +94,7 @@ export const ADMIN_COURSES: AdminCourse[] = PICK.map((c, i) => {
     people: c.teachers.map(nameOf).join(', '),
     state,
     where,
-    step: open ? 2 + at : undefined,
+    step: open ? at + 1 : undefined,
     stepName: open ? step : undefined,
     last: LAST[i % LAST.length],
     criteriaId,
