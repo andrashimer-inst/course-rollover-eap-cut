@@ -7,12 +7,12 @@ import { CRITERIA } from './CriteriaModal'
 
 export type SetupState = 'Ready' | 'In progress' | 'Stuck' | 'Needs help' | 'Not started'
 export const SETUP_STATES: SetupState[] = ['Ready', 'In progress', 'Stuck', 'Needs help', 'Not started']
-// Pill colors by meaning: ready is green, stuck and needs help are orange, in progress is blue, not started is grey.
-export const SETUP_COLOR: Record<SetupState, 'success' | 'info' | 'warning' | 'neutral'> = {
+// Pill colors by meaning: ready is green, stuck is orange, needs help is violet, in progress is blue, not started is grey.
+export const SETUP_COLOR: Record<SetupState, 'success' | 'info' | 'warning' | 'neutral' | 'ai'> = {
   Ready: 'success',
   'In progress': 'info',
   Stuck: 'warning',
-  'Needs help': 'warning',
+  'Needs help': 'ai',
   'Not started': 'neutral',
 }
 
