@@ -80,7 +80,7 @@ export default function AdminCourseImport({ onNavigate, onOpenCourse }: { onNavi
     },
     sortDirection: sortBy === key ? (ascending ? ('ascending' as const) : ('descending' as const)) : ('none' as const),
   })
-  const daysAgo = (last: string) => (last === 'Today' ? 0 : last === 'Yesterday' ? 1 : last === 'No activity' ? 999 : parseInt(last, 10))
+  const daysAgo = (last: string) => (last === 'Today' ? 0 : last === 'Yesterday' ? 1 : parseInt(last, 10))
   const rows = useMemo(() => {
     if (!sortBy) return shown
     const value = (c: AdminCourse): string | number => {

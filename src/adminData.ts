@@ -5,15 +5,14 @@ import { CRITERIA } from './CriteriaModal'
 // Sample data for the admin's Course import page. Everything here is made up. The courses are the ones of the copy wizard, so the
 // admin sees the same names, codes, sub-accounts and teachers as the teacher does.
 
-export type SetupState = 'Ready' | 'In progress' | 'Stuck' | 'Needs help' | 'Not started'
-export const SETUP_STATES: SetupState[] = ['Ready', 'In progress', 'Stuck', 'Needs help', 'Not started']
-// Pill colors by meaning: ready is green, stuck is orange, needs help is violet, in progress is blue, not started is grey.
+export type SetupState = 'Ready' | 'In progress' | 'Stuck' | 'Needs help'
+export const SETUP_STATES: SetupState[] = ['Ready', 'In progress', 'Stuck', 'Needs help']
+// Pill colors by meaning: ready is green, stuck is orange, needs help is violet, in progress is blue.
 export const SETUP_COLOR: Record<SetupState, 'success' | 'info' | 'warning' | 'neutral' | 'ai'> = {
   Ready: 'success',
   'In progress': 'info',
   Stuck: 'warning',
   'Needs help': 'ai',
-  'Not started': 'neutral',
 }
 
 export type AdminCourse = {
@@ -26,7 +25,7 @@ export type AdminCourse = {
   people: string
   state: SetupState
   where: string
-  // The step of the copy wizard the course is at (2 to 5), and its name. None while the copy has not started or when it is done.
+  // The step of the copy wizard the course is at (1 to 5), and its name. None when the copy is done.
   step?: number
   stepName?: string
   last: string
@@ -46,11 +45,11 @@ export const totalOf = (set: CriteriaSet) => set.counts.reduce((n, c) => n + c, 
 // The criteria of a set by name, in the order of the areas.
 export const criteriaTitles = (set: CriteriaSet): string[] =>
   CRITERIA.flatMap((a, i) => a.settings.filter((x) => x.on).slice(0, set.counts[i]).map((x) => x.title))
-// How many criteria the course meets: none when it has not started, and the others short of the ones they have not met.
+// How many criteria the course meets: a number short of all of them. A ready course can miss a criterion or two as well.
 export const metOf = (c: AdminCourse, set: CriteriaSet) => {
   const total = totalOf(set)
   // A ready course can still miss a criterion or two: ready means the copy is done, not that every criterion is met.
-  return c.state === 'Ready' ? total - (c.gap % 3) : c.state === 'Not started' ? 0 : Math.max(1, total - c.gap)
+  return c.state === 'Ready' ? total - (c.gap % 3) : Math.max(1, total - c.gap)
 }
 
 // The teachers of the wizard's list say "You" for the signed-in teacher. The admin sees a name.
@@ -60,8 +59,8 @@ const nameOf = (n: string) => (n === 'You' ? EDUCATORS[0] : n)
 const STEPS = ['Select course', 'Select content', 'Learning object review', 'Set dates', 'Review and copy']
 const HELP = ['a broken link in Week 1', 'a Publisher e-book licence', 'dates that land on a non-working day', 'a missing quiz tool']
 // A fixed pattern, so the page looks the same every time it opens.
-const PATTERN: SetupState[] = ['Needs help', 'Stuck', 'Ready', 'In progress', 'Not started', 'Ready', 'In progress', 'Stuck', 'Ready', 'Needs help', 'Not started', 'In progress', 'Ready', 'Not started', 'Stuck', 'Ready']
-const LAST = ['Today', '5 days ago', 'Yesterday', 'Today', 'No activity', 'Yesterday', 'Today', '8 days ago', '2 days ago', '3 days ago', 'No activity', 'Today', 'Yesterday', 'No activity', '4 days ago', 'Today']
+const PATTERN: SetupState[] = ['Needs help', 'Stuck', 'Ready', 'In progress', 'Stuck', 'Ready', 'In progress', 'Stuck', 'Ready', 'Needs help', 'In progress', 'In progress', 'Ready', 'Stuck', 'Stuck', 'Ready']
+const LAST = ['Today', '5 days ago', 'Yesterday', 'Today', '6 days ago', 'Yesterday', 'Today', '8 days ago', '2 days ago', '3 days ago', '7 days ago', 'Today', 'Yesterday', '9 days ago', '4 days ago', 'Today']
 const OPENS = ['Tue Jan 19, 8:00 AM', 'Mon Jan 11, 8:00 AM', 'Wed Jan 13, 9:00 AM', 'Tue Jan 12, 8:00 AM']
 
 // Every course of the wizard's list, the biology courses first, in three sections each, so the list has many pages like a real term does.
@@ -82,8 +81,7 @@ export const ADMIN_COURSES: AdminCourse[] = PICK.map((c, i) => {
     state === 'Ready' ? `Opens ${OPENS[i % OPENS.length]}`
     : state === 'In progress' ? `At ${step}`
     : state === 'Stuck' ? `At ${step} for ${3 + (i % 6)} days`
-    : state === 'Needs help' ? `Asked for help with ${HELP[i % HELP.length]}`
-    : 'Copy not started'
+    : `Asked for help with ${HELP[i % HELP.length]}`
   const criteriaId = SEED_SETS[i % SEED_SETS.length].id
   return {
     id: `${c.code}-0${c.section + 1}`,
