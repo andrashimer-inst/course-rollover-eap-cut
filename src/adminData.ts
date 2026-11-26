@@ -70,8 +70,11 @@ const PICK = Array.from({ length: SECTIONS }, (_, section) => [...BIO, ...OTHER]
 
 export const ADMIN_COURSES: AdminCourse[] = PICK.map((c, i) => {
   const state = PATTERN[i % PATTERN.length]
-  const step = STEPS[i % STEPS.length]
   const open = state === 'In progress' || state === 'Stuck' || state === 'Needs help'
+  // Help is asked for in the review (step 3), so a course that needs help is at step 3 or further. It may have moved on after the message.
+  // Once the copy is done the course is ready, and Ready takes the place of Needs help.
+  const at = state === 'Needs help' ? 1 + (i % 3) : i % STEPS.length
+  const step = STEPS[at]
   const where =
     state === 'Ready' ? `Opens ${OPENS[i % OPENS.length]}`
     : state === 'In progress' ? `At ${step}`
@@ -88,7 +91,7 @@ export const ADMIN_COURSES: AdminCourse[] = PICK.map((c, i) => {
     people: c.teachers.map(nameOf).join(', '),
     state,
     where,
-    step: open ? 2 + (i % STEPS.length) : undefined,
+    step: open ? 2 + at : undefined,
     stepName: open ? step : undefined,
     last: LAST[i % LAST.length],
     criteriaId,
