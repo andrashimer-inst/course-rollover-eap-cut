@@ -42,7 +42,7 @@ function QuickCard({ number, title, description, action, children }: { number: n
         display: 'flex',
         flexDirection: 'column',
         gap: t.space.lg,
-        ...(card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg } : {}),
+        ...(card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl } : {}),
       }}
     >
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -106,7 +106,9 @@ function CourseCards({ selected, onSelect }: { selected: string; onSelect: (name
                   cursor: 'pointer',
                   // Chosen: blue tint and blue border. Not chosen: a white card with an outline, like the choice cards further down.
                   background: on ? `color-mix(in srgb, ${t.linkColor} 8%, ${t.containerColor})` : t.containerColor,
-                  border: `${on ? '0.125rem' : t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                  // The chosen card is the same size as the others: the second line of the border is drawn inside it.
+                  border: `${t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                  boxShadow: on ? `inset 0 0 0 ${t.borderWidth} ${t.linkColor}` : undefined,
                 }}
               >
                 <div style={{ flex: '0 0 1.5rem', width: '1.5rem', paddingBlockStart: '0.125rem' }}>

@@ -20,7 +20,8 @@ import {
 // What the message is about: a title and what is wrong or left to do. Review rows and to-do entries both fit.
 export type HelpItem = { title: string; detail: string }
 // The recipient, subject and text of a message that is not the one to the admin. `message` gets the list of items.
-export type MessageDraft = { to: string; subject: string; message: (list: string) => string }
+// With `course`, the Course field shows that course.
+export type MessageDraft = { to: string; subject: string; message: (list: string) => string; course?: string }
 
 // One message to the admin about the whole review. It opens from the "Ask for help" button above the table.
 // It is the Canvas "Compose Message" window, without the course and the individual-message checkbox: the "To" field is
@@ -57,7 +58,7 @@ function Form({ items, onClose, onSend, draft }: { items: HelpItem[]; onClose: (
   const [message, setMessage] = useState(
     draft ? draft.message(list) : `Hi,\n\nI am copying content into my course and the review found problems I need help with.\n\n${list}\n\nCan you help me fix them before the term starts?\n\nThank you`,
   )
-  const [course, setCourse] = useState('Cell Biology')
+  const [course, setCourse] = useState(draft?.course ?? 'Cell Biology')
   const [translate, setTranslate] = useState(false)
   const [language, setLanguage] = useState('')
   const [placement, setPlacement] = useState('')
@@ -69,9 +70,9 @@ function Form({ items, onClose, onSend, draft }: { items: HelpItem[]; onClose: (
       </Modal.Header>
       <Modal.Body>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {!draft && (
+          {(!draft || draft.course) && (
             <SimpleSelect renderLabel={<Text weight="bold">Course</Text>} value={course} onChange={(_e, { value }) => setCourse(String(value))}>
-              {COURSES.map((c) => (
+              {(draft?.course ? [draft.course] : COURSES).map((c) => (
                 <SimpleSelect.Option key={c} id={`course-${c}`} value={c}>{c}</SimpleSelect.Option>
               ))}
             </SimpleSelect>

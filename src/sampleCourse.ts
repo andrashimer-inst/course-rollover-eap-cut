@@ -3,6 +3,7 @@ import type { TrayCourse } from './LegacyNav'
 
 // Sample courses for the Legacy Courses tray. Sample data only. A design passes its own `courseList`.
 export const SAMPLE_COURSE_LIST: TrayCourse[] = [
+  { name: 'BIO220: Cell Biology', code: 'BIO220-SP27', term: 'Spring 2027', published: false },
   { name: 'CS101: Intro to Computer Science', code: 'CS101-FA26', term: 'Fall 2026', published: true },
   { name: 'ENG1: College Writing', code: 'ENG1-FA26', term: 'Fall 2026', published: true },
   { name: 'CALC2: Advanced Calculus', code: 'CALC2-FA26', term: 'Fall 2026', published: false },

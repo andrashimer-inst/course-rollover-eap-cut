@@ -379,7 +379,7 @@ export default function ContentStep({
     <div
       style={{
         boxSizing: 'border-box',
-        padding: legacy ? 0 : t.space.lg,
+        padding: legacy ? 0 : t.space.xxl,
         borderRadius: legacy ? undefined : t.radiusCardMd,
         background: legacy ? undefined : t.containerColor,
         boxShadow: legacy ? undefined : t.shadowResting,
@@ -476,7 +476,7 @@ export default function ContentStep({
               background: legacy ? undefined : t.containerColor,
               borderRadius: legacy ? undefined : t.radiusCardMd,
               boxShadow: legacy ? undefined : t.shadowResting,
-              padding: legacy ? 0 : t.space.lg,
+              padding: legacy ? 0 : t.space.xxl,
             }}
           >
             <div style={{ marginBottom: t.space.md, display: 'flex', flexDirection: 'column', gap: t.space.xs }}>
@@ -643,7 +643,7 @@ export function ObjectsPreview({ scope, picked, keepCurrent, description = '', h
         background: legacy || bare ? undefined : t.containerColor,
         borderRadius: legacy || bare ? undefined : t.radiusCardMd,
         boxShadow: legacy || bare ? undefined : t.shadowResting,
-        padding: legacy || bare ? undefined : t.space.lg,
+        padding: legacy || bare ? undefined : t.space.xxl,
       }}
     >
       {!bare && heading}
@@ -752,7 +752,7 @@ export function CoursePreview({
           background: legacy || bare ? undefined : t.containerColor,
           borderRadius: legacy || bare ? undefined : t.radiusCardMd,
           boxShadow: legacy || bare ? undefined : t.shadowResting,
-          padding: legacy || bare ? undefined : t.space.lg,
+          padding: legacy || bare ? undefined : t.space.xxl,
         }}
       >
         {!legacy && !bare && heading}

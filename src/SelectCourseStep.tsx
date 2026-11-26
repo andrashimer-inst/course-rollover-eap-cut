@@ -54,7 +54,7 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
   const pageRows = rows.slice(first, first + PAGE_SIZE)
 
   const filter = (label: string, value: string, set: (v: string) => void, options: { id: string; label: string }[]) => (
-    <div style={{ flex: '1 1 12rem', minWidth: 0 }}>
+    <div style={{ minWidth: 0 }}>
       <SimpleSelect renderLabel={<Text weight="bold">{label}</Text>} value={value} onChange={(_e, { value: v }) => set(String(v))}>
         {options.map((o) => (
           <SimpleSelect.Option key={o.id} id={`${label}-${o.id}`} value={o.id}>{o.label}</SimpleSelect.Option>
@@ -64,10 +64,10 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
   )
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-end' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: themed ? t.space.xxl : t.space.lg }}>
+      <div className="course-filters" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(14rem, 1fr))', gap: t.space.md, alignItems: 'end' }}>
         {/* The sub-account decides which courses are in the list at all, so it stands apart from the search and filters. */}
-        <div style={{ flex: '1 1 16rem', minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           <AutoSelect
             label="Sub-account"
             assistiveText="Type to find a sub-account. Use the up and down arrow keys to choose."
@@ -77,8 +77,7 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
             onChange={(v) => { setSubAccount(v); setPage(1) }}
           />
         </div>
-        <div aria-hidden="true" style={{ alignSelf: 'flex-end', height: '2.375rem', width: t.borderWidth, background: t.strokeBase, margin: `0 ${t.space.sm}` }} />
-        <div style={{ flex: '1 1 12rem', minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           <TextInput
             renderLabel={<Text weight="bold">Search courses</Text>}
             placeholder="Course name, code or teacher"
@@ -87,7 +86,7 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
             onChange={(_e, value) => { setQuery(value); setPage(1) }}
           />
         </div>
-        <div style={{ flex: '1 1 12rem', minWidth: 0 }}>
+        <div style={{ minWidth: 0 }}>
           <AutoSelect
             label="Taught by"
             assistiveText="Type to find a teacher. Use the up and down arrow keys to choose."
@@ -100,10 +99,6 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
         {filter('Term', term, (v) => { setTerm(v); setPage(1) }, [{ id: ANY, label: 'Any term' }, ...TERMS.map((k) => ({ id: k, label: k }))])}
       </div>
 
-      <Text color="secondary" aria-live="polite">
-        {shown.length === 0 ? '0' : `${first + 1} to ${first + pageRows.length}`} of {total} courses
-      </Text>
-
       {shown.length === 0 ? (
         <Text as="p">No course matches. Clear the search or a filter to see more.</Text>
       ) : (
@@ -114,11 +109,16 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
                   background: t.containerColor,
                   borderRadius: t.radiusCardMd,
                   boxShadow: t.shadowResting,
-                  padding: t.space.lg,
+                  padding: t.space.xxl,
                 }
               : undefined
           }
         >
+          <div style={{ paddingBlockEnd: t.space.md, paddingInline: '0.25rem' }}>
+            <Text color="secondary" aria-live="polite">
+              {shown.length === 0 ? '0' : `${first + 1} to ${first + pageRows.length}`} of {total} courses
+            </Text>
+          </div>
           {/* Each course is a white card with a radio. The chosen one gets the blue tint and border, like the quick flow. */}
           <div role="radiogroup" aria-label="Course to copy from" style={{ display: 'flex', flexDirection: 'column', gap: t.space.md, padding: '0.25rem' }}>
             {pageRows.map((c) => {
@@ -135,7 +135,9 @@ export default function SelectCourseStep({ selected, onSelect, bare = false }: {
                     borderRadius: t.radiusCardMd,
                     cursor: 'pointer',
                     background: on ? `color-mix(in srgb, ${t.linkColor} 8%, ${t.containerColor})` : t.containerColor,
-                    border: `${on ? '0.125rem' : t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                    // The chosen card is the same size as the others: the second line of the border is drawn inside it.
+                    border: `${t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                    boxShadow: on ? `inset 0 0 0 ${t.borderWidth} ${t.linkColor}` : undefined,
                   }}
                 >
                   <div style={{ flex: '0 0 1.5rem', width: '1.5rem', paddingBlockStart: '0.125rem' }}>

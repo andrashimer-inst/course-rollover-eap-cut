@@ -51,7 +51,7 @@ export default function ReviewAndCopyStep({
   const { cut } = useFlow()
   const card = useAppThemeKey() !== 'legacy'
   const cardStyle = card
-    ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg }
+    ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl }
     : undefined
 
   // The course preview window.

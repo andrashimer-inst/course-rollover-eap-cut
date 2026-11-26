@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { InstUISettingsProvider } from '@instructure/ui/v11_7'
 import AssignmentsList from './AssignmentsList'
 import CourseContent from './CourseContent'
+import AdminCourseImport from './AdminCourseImport'
 import CourseRollover from './CourseRollover'
 import ThemeSwitcher from './ThemeSwitcher'
 import { AppThemeContext, THEMES } from './appTheme'
@@ -14,8 +15,9 @@ import { FlowProvider } from './flow'
 //   Notebook flow          assignments   the All Assignments page, where the flow starts
 //                          assignment    one assignment, with the Notebook
 //                          page          one page, with the Notebook
+//   Admin flow             admin         Dashboard: the admin's Course import page (courses, copy history, readiness criteria)
 // Notes are shared, and the copy wizard shows them in its Review comments step.
-type Screen = 'rollover' | 'assignments' | 'assignment' | 'page'
+type Screen = 'rollover' | 'assignments' | 'assignment' | 'page' | 'admin'
 
 export default function App() {
   const [themeKey, setThemeKey] = useState<ThemeKey>('light')
@@ -27,6 +29,7 @@ export default function App() {
   // Account switches between the two flows. The other global nav items have no screen here.
   const onNavigate = (label: string) => {
     if (label === 'Account') setScreen((s) => (s === 'rollover' ? 'assignments' : 'rollover'))
+    else if (label === 'Dashboard' || label === 'Home') setScreen('admin')
   }
   // The course menu of the notebook course (Design Portfolio). Settings goes back to Import Content.
   const onSelectMenu = (label: string) => {
@@ -40,6 +43,7 @@ export default function App() {
     <AppThemeContext.Provider value={themeKey}>
       <InstUISettingsProvider theme={THEMES[themeKey]}>
         {screen === 'rollover' && <CourseRollover notes={api.notes} onNavigate={onNavigate} />}
+        {screen === 'admin' && <AdminCourseImport onNavigate={(label) => (label === 'Account' ? setScreen('rollover') : onNavigate(label))} onOpenCourse={() => setScreen('rollover')} />}
         {screen === 'assignments' && (
           <AssignmentsList
             api={api}

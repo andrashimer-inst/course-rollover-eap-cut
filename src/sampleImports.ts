@@ -23,7 +23,7 @@ export type ImportRow = {
 
 // An earlier copy has the same long lists as a copy made just now: the copy history, the to-do list and what was not
 // copied are built from the same review rows and the same choices, so they look like the real thing.
-function summaryOf(course: string, when: string, created: number, published: boolean, choices: Record<string, Choice>): CopySummary {
+export function summaryOf(course: string, when: string, created: number, published: boolean, choices: Record<string, Choice>): CopySummary {
   const rows = buildRows('whole', {}, [])
   const opens = published ? `Your course was published on ${when}.` : openingLabel(INITIAL_OPENING)
   const left = rows.filter((r) => !r.extra && !r.courseWide && choiceOf(r, choices) === 'leave')

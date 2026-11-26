@@ -1,6 +1,7 @@
 import { Fragment, createContext, useContext, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ArrowLeftRightInstUIIcon, IconButton, Tooltip } from '@instructure/ui/v11_7'
+import { launchCut } from './launch'
 import { setCutMode } from './reviewData'
 
 // Two versions of the copy flow in one prototype. A switch in the page header changes between them.
@@ -12,7 +13,8 @@ import { setCutMode } from './reviewData'
 const FlowContext = createContext<{ cut: boolean; toggle: () => void }>({ cut: false, toggle: () => {} })
 
 export function FlowProvider({ children }: { children: ReactNode }) {
-  const [cut, setCut] = useState(true)
+  // The cut flow starts first, unless the address (a course opened by the admin) names the flow.
+  const [cut, setCut] = useState(() => launchCut() ?? true)
   // Switching flows starts everything again: the key makes the whole prototype below mount fresh, so the wizard, its choices and the
   // copy history all go back to the start.
   const [round, setRound] = useState(0)

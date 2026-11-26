@@ -8,9 +8,6 @@ import {
   IconArrowOpenDownSolid,
   IconArrowOpenUpSolid,
   IconArrowOpenEndSolid,
-  IconButton,
-  LayoutListInstUIIcon,
-  TableInstUIIcon,
   ScreenReaderContent,
   SimpleSelect,
   Tooltip,
@@ -86,8 +83,6 @@ export default function LearningObjectReview({
   const [tab, setTab] = useState(0)
   // The cut flow has no criteria and no readiness check, and no general items (they all come from the criteria).
   const { cut } = useFlow()
-  // The modules and learning objects tabs share two looks: the table, and a card for each module or type.
-  const [moduleCards, setModuleCards] = useState(true)
   const [checking, setChecking] = useState(false)
   const [previewOpen, setPreviewOpen] = useState(false)
   const [criteriaOpen, setCriteriaOpen] = useState(false)
@@ -259,19 +254,19 @@ export default function LearningObjectReview({
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
                             {r.findings.map((f) => (
-                              <div key={f.rule.id + f.detail}>
+                              <div key={f.rule.id + f.detail} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
                                 <StatusPill size="sm" color={f.rule.id.startsWith('a11y') ? 'ai' : f.rule.id === 'unused' ? 'neutral' : 'warning'}>
                                   {RULE_LABEL[f.rule.id] ?? f.rule.title}
                                 </StatusPill>
-                                <Text as="div" color="secondary">{f.detail}</Text>
+                                <Text size="small" color="secondary">{f.detail}</Text>
                               </div>
                             ))}
                             {r.findings.length === 0 && r.note && (
-                              <div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
                                 <StatusPill size="sm" color={r.note.decision === 'copy' ? 'success' : 'warning'}>
                                   {NOTE_LABEL[r.note.id] ?? 'Flagged by your team'}
                                 </StatusPill>
-                                <Text as="div" color="secondary">{r.note.author} left a note about this last term.</Text>
+                                <Text size="small" color="secondary">{r.note.author} left a note about this last term.</Text>
                               </div>
                             )}
                           </div>
@@ -300,27 +295,46 @@ export default function LearningObjectReview({
     )
   }
 
+  // Light and Dark (Figma ContentTabList spacing): 24px from the tabs to the filters, 32px from the filters to the card. Legacy keeps its own.
+  const tabGap = legacy ? 'general.spaceMd 0 0 0' : 'general.spaceXl 0 0 0'
+  const filterToCard = legacy ? t.space.lg : t.space.xxl
+  // One big card for a tab, like the course preview: the title, the bulk actions, and the module cards. The filters and buttons stay above it.
+  const bigCard = (title: string, list: ReviewRow[], body: ReactNode) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: filterToCard }}>
+      {filterRow(list)}
+      <section
+      aria-label={title}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: t.space.lg,
+        ...(card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl } : {}),
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+        <Text weight="bold" size="large">{title}</Text>
+        <Text as="div" color="secondary">
+          {left(list) > 0 ? `${left(list)} ${left(list) === 1 ? 'finding' : 'findings'} left to review` : 'All findings reviewed'}
+        </Text>
+      </div>
+      {body}
+    </section>
+    </div>
+  )
+
   // The other look of the modules: a card for each module, its items as grey rows inside. Same data and actions as the table.
-  const moduleCardList = (subset: ReviewRow[], title: string) => {
+  const moduleCardList = (subset: ReviewRow[]) => {
     const groups = groupsOf(subset).filter((g) => g !== 'Whole course')
     const allSel = subset.length > 0 && subset.every((r) => selected.includes(r.id))
     const someSel = subset.some((r) => selected.includes(r.id))
     const rowFill = `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
-            <Text weight="bold" size="large">{title}</Text>
-            <Text as="div" color="secondary">
-              {left(subset) > 0 ? `${left(subset)} ${left(subset) === 1 ? 'finding' : 'findings'} left to review` : 'All findings reviewed'}
-            </Text>
-          </div>
-        </div>
         {/* One white card for choosing: the tick for all items, and next to it the bulk actions once something is ticked. */}
         <div
           role="region"
           aria-label="Bulk actions"
-          style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', padding: t.space.md, minHeight: '4rem', boxSizing: 'border-box', borderRadius: t.radiusCardMd, background: t.containerColor, boxShadow: card ? t.shadowResting : undefined, border: `${t.borderWidth} solid ${t.borderColor}` }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'center', padding: t.space.md, minHeight: '4rem', boxSizing: 'border-box', borderRadius: t.radiusCardMd, background: t.containerColor, border: `${t.borderWidth} solid ${t.borderColor}` }}
         >
           <Checkbox
             label="Select all items"
@@ -343,7 +357,6 @@ export default function LearningObjectReview({
               style={{
                 background: t.containerColor,
                 borderRadius: t.radiusCardMd,
-                boxShadow: card ? t.shadowResting : undefined,
                 border: `${t.borderWidth} solid ${t.borderColor}`,
                 padding: t.space.lg,
                 display: 'flex',
@@ -384,7 +397,7 @@ export default function LearningObjectReview({
                         <div style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'center' }}>
                           <Text as="div" weight="bold">{r.title}</Text>
                         </div>
-                        <Text as="div" size="small" color="secondary">{r.kindLabel}</Text>
+                        <div style={{ marginBlockStart: `calc(-1 * ${t.space.sm})` }}><Text as="div" size="small" color="secondary">{r.kindLabel}</Text></div>
                         {r.note && <Text as="div" size="small" color="primary">Your team’s note: {r.note.text}</Text>}
                       </div>
                       {findingCell(r)}
@@ -409,7 +422,7 @@ export default function LearningObjectReview({
           className="review-table"
           style={
             card
-              ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg }
+              ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl }
               : undefined
           }
         >
@@ -541,7 +554,7 @@ export default function LearningObjectReview({
   // The buttons under the tabs.
   // Only the kinds of finding the open tab has. A kind with no rows there is left out, unless it is the one chosen.
   const shownKinds = (list: ReviewRow[]) => kinds.filter(([id]) => countOf(list, `rule:${id}`) > 0 || filter === `rule:${id}`)
-  const filterRow = (list: ReviewRow[], switchable = false) => (
+  const filterRow = (list: ReviewRow[]) => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-end', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: t.space.md }}>
         <div style={{ width: '18rem', maxWidth: '100%' }}>
@@ -577,16 +590,6 @@ export default function LearningObjectReview({
         {/* Check acts on the findings, so it stands apart from the buttons that only open something. */}
         {!cut && <Button renderIcon={<IconInfoLine />} onClick={() => setCriteriaOpen(true)}>Criteria</Button>}
         {!cut && <span aria-hidden="true" style={{ alignSelf: 'stretch', width: t.borderWidth, minHeight: '2rem', background: t.textColor }} />}
-        {switchable && (
-          <Tooltip renderTip={moduleCards ? 'Show the items as a table' : 'Show the items as cards'} placement="top">
-            <IconButton
-              screenReaderLabel={moduleCards ? 'Show the items as a table' : 'Show the items as cards'}
-              onClick={() => setModuleCards(!moduleCards)}
-            >
-              {moduleCards ? <TableInstUIIcon /> : <LayoutListInstUIIcon />}
-            </IconButton>
-          </Tooltip>
-        )}
         <Button renderIcon={<IconEyeLine />} onClick={() => setPreviewOpen(true)}>Course preview</Button>
         <Button renderIcon={<IconEmailLine />} onClick={() => setHelpOpen(true)}>Ask for help</Button>
         <Button renderIcon={<IconAssignmentLine />} onClick={onToggleTodo}>To-do list ({todo.length})</Button>
@@ -656,23 +659,18 @@ export default function LearningObjectReview({
         setSelected([])
         setBulk('')
       }}>
-        <Tabs.Panel id="tab-modules" renderTitle={`Modules (${moduleLeft})`} isSelected={tab === 0} padding="general.spaceMd 0 0 0">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
-            {filterRow(moduleRows, true)}
-            {!moduleCards && bulkBar('Bulk actions')}
-          {moduleRows.length > 0 ? filtered(moduleRows).length > 0 ? (moduleCards ? moduleCardList(filtered(moduleRows), 'Modules') : reviewTable(filtered(moduleRows), 'Learning objects in modules', 'Modules')) : <Text as="p">No items match this filter.</Text> : <Text as="p">No items in modules to review.</Text>}
-          </div>
+        <Tabs.Panel id="tab-modules" renderTitle={`Modules (${moduleLeft})`} isSelected={tab === 0} padding={tabGap}>
+          {moduleRows.length > 0
+            ? bigCard('Modules', moduleRows, filtered(moduleRows).length > 0 ? moduleCardList(filtered(moduleRows)) : <Text as="p">No items match this filter.</Text>)
+            : <Text as="p">No items in modules to review.</Text>}
         </Tabs.Panel>
-        <Tabs.Panel id="tab-objects" renderTitle={`Learning objects (${objectsLeft})`} isSelected={tab === 1} padding="general.spaceMd 0 0 0">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
-            {filterRow(standaloneRows, true)}
-            {!moduleCards && bulkBar('Bulk actions')}
+        <Tabs.Panel id="tab-objects" renderTitle={`Learning objects (${objectsLeft})`} isSelected={tab === 1} padding={tabGap}>
           {/* This tab lists what you chose on the previous page that is copied without a module. */}
           {standaloneRows.length > 0 ? (
-            filtered(standaloneRows).length > 0 ? (moduleCards ? moduleCardList(filtered(standaloneRows), 'Learning objects') : reviewTable(filtered(standaloneRows), 'Learning objects copied on their own', 'Learning objects')) : <Text as="p">No items match this filter.</Text>
+            bigCard('Learning objects', standaloneRows, filtered(standaloneRows).length > 0 ? moduleCardList(filtered(standaloneRows)) : <Text as="p">No items match this filter.</Text>)
           ) : (
             <div
-              style={card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg } : undefined}
+              style={card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl } : undefined}
             >
               <div style={{ marginBottom: t.space.sm }}>
                 <Text weight="bold" size="large">Learning objects</Text>
@@ -684,10 +682,9 @@ export default function LearningObjectReview({
               </Text>
             </div>
           )}
-          </div>
         </Tabs.Panel>
-        {!cut && <Tabs.Panel id="tab-course" renderTitle={`General items (${generalLeft})`} isSelected={tab === 2} padding="general.spaceMd 0 0 0">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
+        {!cut && <Tabs.Panel id="tab-course" renderTitle={`General items (${generalLeft})`} isSelected={tab === 2} padding={tabGap}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: filterToCard }}>
             {filterRow(wholeRows)}
             {bulkBar('Bulk actions')}
           {wholeRows.length > 0 ? filtered(wholeRows).length > 0 ? reviewTable(filtered(wholeRows), 'Issues that affect the whole course', 'General items') : <Text as="p">No items match this filter.</Text> : <Text as="p">No items to review.</Text>}
@@ -696,7 +693,7 @@ export default function LearningObjectReview({
       </Tabs>
       </>)}
       {/* The course as it will look after the copy, with the choice made for each item. */}
-      <CoursePreviewModal cards={moduleCards} open={previewOpen} onClose={() => setPreviewOpen(false)} source={{ moduleIds, keepCurrent: merging, hidden: hiddenModules(dupes), scope, picked }} noteFor={previewNote} leftOut={(id) => rows.some((r) => itemIdOf(r) === id && choiceOf(r, choices) === 'leave')} />
+      <CoursePreviewModal open={previewOpen} onClose={() => setPreviewOpen(false)} source={{ moduleIds, keepCurrent: merging, hidden: hiddenModules(dupes), scope, picked }} noteFor={previewNote} leftOut={(id) => rows.some((r) => itemIdOf(r) === id && choiceOf(r, choices) === 'leave')} />
       {!cut && <CriteriaModal open={criteriaOpen} onClose={() => setCriteriaOpen(false)} onRunCheck={() => setChecking(true)} running={checking} results={Object.fromEntries(readiness(rows, choices).map((x) => [x.rule.id, x.status]))} />}
       <AdminHelpModal open={helpOpen} items={(rows.filter((r) => r.hasSuggestion && !done(r)).length ? rows.filter((r) => r.hasSuggestion && !done(r)) : rows.filter((r) => r.hasSuggestion)).map((r) => ({ title: r.title, detail: r.findings.map((f) => f.detail).join(' ') || r.note?.text || '' }))} onClose={() => setHelpOpen(false)} onSend={() => { setMessageSent(true); onHelpSent() }} />
     </div>

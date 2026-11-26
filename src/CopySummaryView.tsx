@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Button, IconDownloadLine, IconEmailLine, IconAnalyticsLine, IconExportLine, IconExternalLinkLine, IconSearchLine, Link, Metric, ScreenReaderContent, SimpleSelect, Table, Tabs, Text, TextInput } from '@instructure/ui/v11_7'
 import AdminHelpModal from './AdminHelpModal'
-import { previewItemOf } from './courseContentData'
 import AutoSelect from './AutoSelect'
 import Pager from './Pager'
 import ReadinessResults from './ReadinessResults'
@@ -10,8 +9,9 @@ import { CRITERIA_NAME } from './CriteriaModal'
 import { useFlow } from './flow'
 import FigmaAlert from './FigmaAlert'
 import StatusPill from './StatusPill'
+import { TodoList } from './TodoTray'
 import { PEOPLE } from './copyHistory'
-import { GLOBAL_CRITERIA_NOTE, TODO_GROUPS, exportTodo, failedTodo, groupTodo, tagOf } from './reviewCopyData'
+import { GLOBAL_CRITERIA_NOTE, exportTodo, failedTodo } from './reviewCopyData'
 import type { CopySummary, HistoryEvent } from './rolloverData'
 import { useAppThemeKey, useSurfaceTokens } from './appTheme'
 
@@ -43,15 +43,17 @@ function exportHistory(list: HistoryEvent[], course: string) {
 }
 
 export function SummaryView({
-  summary, undone: wasUndone = false,
+  summary, undone: wasUndone = false, admin = false,
 }: {
   summary: CopySummary
   undone?: boolean
+  // The admin's view of a course: no to-do list, because that list is the teacher's.
+  admin?: boolean
 }) {
   const t = useSurfaceTokens()
   const card = useAppThemeKey() !== 'legacy'
   const cardStyle = card
-    ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg }
+    ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl }
     : { borderTop: `${t.borderWidth} solid ${t.borderColor}`, paddingTop: t.space.lg }
 
   // Bringing an item now is shown here: the item leaves the list and counts as created.
@@ -61,6 +63,8 @@ export function SummaryView({
   const [typeFilter, setTypeFilter] = useState('all')
   const [personFilter, setPersonFilter] = useState('all')
   const [tab, setTab] = useState(0)
+  // Without the to-do list every other tab moves one place up.
+  const base = admin ? 1 : 0
   // The cut flow has no readiness check, so the summary has no Course check tab.
   const { cut: flowCut } = useFlow()
   const cut = flowCut || !!summary.quick
@@ -71,19 +75,6 @@ export function SummaryView({
   // Clicking a column title of the history orders it by that column. A second click turns the order around.
   const [sortBy, setSortBy] = useState<'when' | 'tag' | 'text' | 'who' | null>(null)
   const [ascending, setAscending] = useState(true)
-  // The to-do list can be ordered by its two columns, inside each group. A second click turns the order around.
-  const [todoSort, setTodoSort] = useState<'content' | 'todo' | null>(null)
-  const [todoAsc, setTodoAsc] = useState(true)
-  const todoSortProps = (key: 'content' | 'todo') => ({
-    onRequestSort: () => {
-      if (todoSort === key) setTodoAsc(!todoAsc)
-      else {
-        setTodoSort(key)
-        setTodoAsc(true)
-      }
-    },
-    sortDirection: todoSort === key ? (todoAsc ? ('ascending' as const) : ('descending' as const)) : ('none' as const),
-  })
   // The to-do list sent to the educator by message, in the same window as the message to the admin in the learning object review.
   const [helpOpen, setHelpOpen] = useState(false)
   // The learning object that was clicked in the to-do list. It opens in the preview window.
@@ -112,14 +103,6 @@ export function SummaryView({
     ...summary.todo.filter((x) => x.tag !== 'Copy failed' && !x.title.startsWith('Copy failed:')),
     ...summary.failed.map(failedTodo),
   ]
-
-  // The groups of the to-do list in the order of the chosen column. Without a choice they keep the order they were made in.
-  const sortedGroups = <G extends { content?: string; entries: { title: string }[] }>(groups: G[]): G[] => {
-    if (!todoSort) return groups
-    const key = (g: G) => (todoSort === 'content' ? (g.content ?? '') : (g.entries[0]?.title ?? '')).toLowerCase()
-    const sorted = [...groups].sort((a, b) => (key(a) > key(b) ? 1 : key(a) < key(b) ? -1 : 0))
-    return todoAsc ? sorted : sorted.reverse()
-  }
 
   const filtered = summary.history
     .filter((h) => typeFilter === 'all' || h.tag === typeFilter)
@@ -166,7 +149,7 @@ export function SummaryView({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(10rem, 1fr))', gap: t.space.lg }}>
             {[
               [created, 'Items copied'],
-              [stills, 'Open to-do items'],
+              ...(admin ? [] : [[stills, 'Open to-do items']]),
               [summary.stats.datesPlaced, 'Dates updated'],
               [notCopied.length, 'Not copied'],
               [summary.stats.sentToAdmin, 'Asked for help'],
@@ -195,8 +178,8 @@ export function SummaryView({
 
       {!undone ? (
         <Tabs onRequestTabChange={(_e, { index }) => setTab(index)}>
-          {/* The to-do list is the first tab: it is what you do next. */}
-          <Tabs.Panel id="tab-todo" renderTitle={`To-do list (${todoAll.length})`} isSelected={tab === 0} padding="general.spaceXl 0 0 0">
+          {/* The to-do list is the first tab: it is what you do next. The admin does not have it. */}
+          {!admin && <Tabs.Panel id="tab-todo" renderTitle={`To-do list (${todoAll.length})`} isSelected={tab === 0} padding="general.spaceXl 0 0 0">
             <section aria-label="To-do list" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -210,64 +193,13 @@ export function SummaryView({
                   </Button>
                 </div>
               </div>
-              <Table caption={() => 'To-do list after the copy'} themeOverride={noFill}>
-                <Table.Head themeOverride={noFill}>
-                  <Table.Row themeOverride={noFill}>
-                    <Table.ColHeader themeOverride={noFill} id="todo-content" width="40%" {...todoSortProps('content')}>Learning object</Table.ColHeader>
-                    <Table.ColHeader themeOverride={noFill} id="todo-item" {...todoSortProps('todo')}>To do</Table.ColHeader>
-                  </Table.Row>
-                </Table.Head>
-                <Table.Body themeOverride={noFill}>
-                  {TODO_GROUPS.flatMap((g) => {
-                    const items = todoAll.filter((x) => x.group === g)
-                    if (items.length === 0) return []
-                    return [
-                      <Table.Row themeOverride={noFill} key={`g-${g}`}>
-                        <Table.Cell themeOverride={noFill}><Text weight="bold">{g} ({items.length})</Text></Table.Cell>
-                        <Table.Cell themeOverride={noFill} />
-                      </Table.Row>,
-                      // An item with more than one problem is one row: its name once, and each problem under "To do".
-                      ...sortedGroups(groupTodo(items)).map((grp, i) => (
-                        <Table.Row themeOverride={noFill} key={`${g}-${i}`}>
-                          <Table.Cell themeOverride={noFill}>
-                            {/* A link to the item in the course. It does not go anywhere in the prototype. */}
-                            {grp.content ? (
-                              // The item is a link only when it has a preview. The module it is in stays as text.
-                              previewItemOf(grp.content) ? (
-                                <>
-                                  <Link as="button" onClick={showToast}>{grp.content.split(', in ')[0]}</Link>
-                                  {grp.content.includes(', in ') && `, in ${grp.content.split(', in ').slice(1).join(', in ')}`}
-                                </>
-                              ) : (
-                                grp.content
-                              )
-                            ) : (
-                              <Text color="secondary">None</Text>
-                            )}
-                          </Table.Cell>
-                          <Table.Cell themeOverride={noFill}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
-                              {grp.entries.map((x, n) => (
-                                <div key={n}>
-                                  {/* The pill says what kind of thing it is, the same pills as in the review. */}
-                                  {tagOf(x) && <div style={{ marginBottom: t.space.xs }}><StatusPill size="sm" color={tagOf(x)!.tone}>{tagOf(x)!.tag}</StatusPill></div>}
-                                  {x.title}
-                                  {x.detail && x.detail !== x.content && <Text as="div" size="small" color="secondary">{x.detail}</Text>}
-                                </div>
-                              ))}
-                            </div>
-                          </Table.Cell>
-                        </Table.Row>
-                      )),
-                    ]
-                  })}
-                </Table.Body>
-              </Table>
+              {/* The items are cards, the same as in the to-do list beside the review. */}
+              <TodoList todo={todoAll} onOpenLink={showToast} />
               {/* The last line of the list. It is in the download and in the message too. */}
               <Text as="div" color="secondary">{GLOBAL_CRITERIA_NOTE}</Text>
             </section>
-          </Tabs.Panel>
-          <Tabs.Panel id="tab-not-copied" renderTitle={`Not copied (${notCopied.length})`} isSelected={tab === 1} padding="general.spaceXl 0 0 0">
+          </Tabs.Panel>}
+          <Tabs.Panel id="tab-not-copied" renderTitle={`Not copied (${notCopied.length})`} isSelected={tab === 1 - base} padding="general.spaceXl 0 0 0">
             <section aria-label="Not copied" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -281,9 +213,10 @@ export function SummaryView({
                 {/* The source course opens in a new tab, which is not part of this prototype. */}
                 <Button renderIcon={<IconExternalLinkLine />} onClick={showToast}>Open source course</Button>
               </div>
-              <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+              {/* The items are grey cards, the same as the to-do list and the review. */}
+              <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: t.space.md }}>
                 {notCopied.map((n) => (
-                  <li key={n.item} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: t.space.md, padding: `${t.space.md} 0`, borderTop: `${t.borderWidth} solid ${t.borderColor}` }}>
+                  <li key={n.item} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: t.space.md, padding: t.space.md, background: `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`, borderRadius: t.radiusCardSm }}>
                     <span style={{ flex: '1 1 18rem', minWidth: 0 }}>
                       <Text as="div" weight="bold">{n.item}</Text>
                       <Text as="div" color="secondary">{n.reason}</Text>
@@ -301,7 +234,7 @@ export function SummaryView({
               </ul>
             </section>
           </Tabs.Panel>
-          {!cut && <Tabs.Panel id="tab-check" renderTitle="Course check" isSelected={tab === 2} padding="general.spaceXl 0 0 0">
+          {!cut && <Tabs.Panel id="tab-check" renderTitle="Course check" isSelected={tab === 2 - base} padding="general.spaceXl 0 0 0">
             <section aria-label="Course check" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: t.space.md, alignItems: 'flex-start', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
@@ -326,7 +259,7 @@ export function SummaryView({
               )}
             </section>
           </Tabs.Panel>}
-          <Tabs.Panel id="tab-history" renderTitle={`Copy history (${summary.history.length})`} isSelected={tab === (cut ? 2 : 3)} padding="general.spaceXl 0 0 0">
+          <Tabs.Panel id="tab-history" renderTitle={`Copy history (${summary.history.length})`} isSelected={tab === (cut ? 2 : 3) - base} padding="general.spaceXl 0 0 0">
       <section aria-labelledby="history" style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
           <Text as="div" weight="bold" size="large" id="history">Copy history</Text>

@@ -60,6 +60,7 @@ const row = { display: 'flex', alignItems: 'center', gap: 8 } as const
 // (opens level 2) and Course catalog. Sample data only.
 const COURSES_SUB = ['Overview', 'My courses', 'Course catalog']
 const MY_COURSES = [
+  'BIO220: Cell Biology',
   'CS101: Intro to Computer Science',
   'CALC2: Advanced Calculus',
   'ENG1: College Writing',
@@ -208,6 +209,7 @@ function ModernNav({
   userName = 'User Name',
   userRole = 'educator',
   onNavigate,
+  onOpenCourse,
 }: GlobalNavProps) {
   const [collapsed, setCollapsed] = useState(false)
   // Which sub navigation is open (null = closed) and which course the user went to.
@@ -577,6 +579,8 @@ function ModernNav({
                             onOptionClick={() => {
                               setSelectedCourse(name)
                               if (course) openSub('course')
+                              // A page that is not in a course (the admin's page) goes to the course.
+                              onOpenCourse?.({ name, code: name.split(':')[0], term: '', published: true })
                             }}
                             renderAfterLabel={selectedCourse === name ? <CheckInstUIIcon /> : undefined}
                           >

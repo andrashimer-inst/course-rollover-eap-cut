@@ -25,7 +25,7 @@ export default function PublishCards({ opening, setOpening }: { opening: Opening
   return (
     <div
       style={{
-        ...(card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg } : {}),
+        ...(card ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl } : {}),
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',

@@ -44,6 +44,7 @@ export default function ModernWrapper({
   activeNav = 'Dashboard',
   course,
   onNavigate,
+  onOpenCourse,
   headerActions,
   fullWidth = false,
   description,
@@ -103,7 +104,7 @@ export default function ModernWrapper({
       >
         Skip to main content
       </a>
-      <GlobalNav activeNav={activeNav} course={course} onNavigate={onNavigate} />
+      <GlobalNav activeNav={activeNav} course={course} onNavigate={onNavigate} onOpenCourse={onOpenCourse} />
 
       <div style={{ flex: 1, minWidth: 0, display: 'flex' }}>
         {/* Container: 32px padding around the main container */}

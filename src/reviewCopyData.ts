@@ -102,7 +102,7 @@ export function buildTodo(args: {
     const where = r.courseWide ? 'Whole course' : `${r.title} (${r.kindLabel})${moduleNames.includes(r.group) ? `, in ${r.group}` : ''}`
     // One entry for each finding of the item. The summary and the side panel list the item once, with its findings under it.
     for (const f of r.findings) {
-      todo.push({ group: 'Fix after the copy', title: f.detail, detail: where, content: where, tag: RULE_LABEL[f.rule.id] ?? f.rule.title, tone: f.rule.severity === 'critical' ? 'error' : 'warning' })
+      todo.push({ group: 'Fix after the copy', title: f.detail, detail: where, content: where, tag: RULE_LABEL[f.rule.id] ?? f.rule.title, tone: f.rule.id.startsWith('a11y') ? 'ai' : f.rule.id === 'unused' ? 'neutral' : 'warning' })
     }
   }
 

@@ -132,7 +132,7 @@ export default function FixDatesStep({
   const t = useSurfaceTokens()
   const card = useAppThemeKey() !== 'legacy'
   const cardStyle = card
-    ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg }
+    ? { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl }
     : undefined
 
   const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`

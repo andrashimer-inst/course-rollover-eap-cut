@@ -24,6 +24,7 @@ import {
 import DesktopWrapper from './DesktopWrapper'
 import FigmaAlert from './FigmaAlert'
 import RolloverWizard from './RolloverWizard'
+import { consumeLaunch, draftAt, readLaunch } from './launch'
 import type { WizardDraft } from './RolloverWizard'
 import { SummaryView } from './CopySummaryView'
 import StatusPill from './StatusPill'
@@ -102,14 +103,17 @@ export default function CourseRollover({
   const [contentType, setContentType] = useState(CONTENT_TYPES[0])
   const adjustDates = true
   const [imports, setImports] = useState<ImportRow[]>(() => PREVIOUS_IMPORTS.slice(0, 1))
-  const [wizardOpen, setWizardOpen] = useState(false)
+  // An admin can open a course at the step where it stands. Then the wizard opens as if a saved copy was picked up again.
+  const [started] = useState(readLaunch)
+  useEffect(() => consumeLaunch(), [])
+  const [wizardOpen, setWizardOpen] = useState(started !== null)
   // Which flow the copy starts with: asked in a window when the copy starts. The quick flow is one page, the other has steps.
   const [quick, setQuick] = useState(false)
   const [flowAsk, setFlowAsk] = useState(false)
   const [flowPick, setFlowPick] = useState<'quick' | 'steps'>('quick')
   // A copy saved with "Save and continue later". It is picked up again on the step it was left on.
-  const [draft, setDraft] = useState<(WizardDraft & { savedAt: Date }) | null>(null)
-  const [resume, setResume] = useState(false)
+  const [draft, setDraft] = useState<(WizardDraft & { savedAt: Date }) | null>(() => (started ? draftAt(started.course, started.step) : null))
+  const [resume, setResume] = useState(started !== null)
   // The import whose summary is open as a page. A copy is undone from its summary.
   const [viewing, setViewing] = useState<ImportRow | null>(null)
   // The window that asks before the whole copy is undone.
@@ -281,7 +285,7 @@ export default function CourseRollover({
               style={
                 legacy
                   ? { borderTop: `${t.borderWidth} solid ${t.borderColor}`, paddingTop: t.space.xl, marginTop: `calc(${t.space.xl} * -1)` }
-                  : { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.lg }
+                  : { background: t.containerColor, borderRadius: t.radiusCardMd, boxShadow: t.shadowResting, padding: t.space.xxl }
               }
             >
               <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.lg }}>
@@ -366,7 +370,9 @@ export default function CourseRollover({
                     borderRadius: t.radiusCardMd,
                     cursor: 'pointer',
                     background: on ? `color-mix(in srgb, ${t.linkColor} 8%, ${t.containerColor})` : t.containerColor,
-                    border: `${on ? '0.125rem' : t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                    // The chosen card is the same size as the others: the second line of the border is drawn inside it.
+                    border: `${t.borderWidth} solid ${on ? t.linkColor : t.borderColor}`,
+                    boxShadow: on ? `inset 0 0 0 ${t.borderWidth} ${t.linkColor}` : undefined,
                   }}
                 >
                   <div style={{ flex: '0 0 1.5rem', width: '1.5rem', paddingBlockStart: '0.125rem' }}>

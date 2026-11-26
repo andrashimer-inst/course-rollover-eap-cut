@@ -53,3 +53,9 @@ body {
   outline: 0.125rem solid currentColor;
   outline-offset: 0.25rem;
 }
+
+/* A text input with an icon in front (like the course search) keeps the icon and the text on one line when the field is narrow.
+   InstUI lets the layout wrap, which puts the icon above the text. */
+[class*="textInput__layout"] { flex-wrap: nowrap !important; }
+[class*="textInput__inputLayout"] { min-width: 0; flex: 1 1 auto !important; }
+[class*="textInput__inputLayout"] input { min-width: 0 !important; width: 100% !important; }

@@ -15,11 +15,13 @@ import { useSurfaceTokens } from './appTheme'
 export const todoTitle = (todo: TodoItem[]) => `To-do list (${todo.length})`
 export const TODO_DESCRIPTION = 'What is left for you to do by hand. It changes as you make choices.'
 
-export function TodoList({ todo }: { todo: TodoItem[] }) {
+export function TodoList({ todo, onOpenLink }: { todo: TodoItem[]; onOpenLink?: () => void }) {
   const t = useSurfaceTokens()
   // The item that was clicked. It opens in the preview window, view only.
   const [openItem, setOpenItem] = useState<PreviewItem | null>(null)
   if (todo.length === 0) return <Text>Nothing to do so far.</Text>
+  // The same grey row as the items of the review: light grey, round corners, no line.
+  const rowFill = `color-mix(in srgb, ${t.textColor} 5%, ${t.containerColor})`
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.xl }}>
       <ItemPreviewModal item={openItem} onClose={() => setOpenItem(null)} />
@@ -27,41 +29,36 @@ export function TodoList({ todo }: { todo: TodoItem[] }) {
         const items = todo.filter((x) => x.group === g)
         if (items.length === 0) return null
         return (
-          <section key={g} aria-label={g} style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
-            <Heading level="h3" variant="titleCardRegular">
+          <section key={g} aria-label={g} style={{ display: 'flex', flexDirection: 'column', gap: t.space.md }}>
+            <Heading level="h4" as="h3">
               {g} ({items.length})
             </Heading>
-            {/* Rows like a table, but a plain list: a line between the rows, no bullets, no indent. */}
-            <ul style={{ listStyle: 'none', margin: 0, padding: 0, borderBlockStart: `${t.borderWidth} solid ${t.borderColor}` }}>
-              {/* An item with more than one problem is one entry: its problems, then where it is, once. */}
-              {groupTodo(items).map((grp, i) => (
-                <li key={i} style={{ padding: `${t.space.sm} 0`, borderBlockEnd: `${t.borderWidth} solid ${t.borderColor}` }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
-                    {grp.entries.map((x, n) => (
-                      <div key={n}>
-                        {tagOf(x) && <div style={{ marginBottom: t.space.xs }}><StatusPill size="xs" color={tagOf(x)!.tone}>{tagOf(x)!.tag}</StatusPill></div>}
-                        <Text as="div">{x.title}</Text>
-                        {/* Entries about one part of the course share the line below. The others say what to do themselves. */}
-                        {!grp.content && x.detail && <Text as="div" size="small" color="secondary">{x.detail}</Text>}
-                      </div>
-                    ))}
+            {/* An item with more than one problem is one card: its problems, then where it is, once. */}
+            {groupTodo(items).map((grp, i) => (
+              <div key={i} style={{ background: rowFill, borderRadius: t.radiusCardSm, padding: t.space.md, display: 'flex', flexDirection: 'column', gap: t.space.sm }}>
+                {/* Where the findings are comes first: the item is a link when it has a preview, the others stay as text. */}
+                {grp.content && (
+                  <Text as="div" size="small" color="secondary">
+                    {previewItemOf(grp.content) ? (
+                      <>
+                        <Link as="button" onClick={() => (onOpenLink ? onOpenLink() : setOpenItem(previewItemOf(grp.content)))}>{grp.content.split(', in ')[0]}</Link>
+                        {grp.content.includes(', in ') && `, in ${grp.content.split(', in ').slice(1).join(', in ')}`}
+                      </>
+                    ) : (
+                      grp.content
+                    )}
+                  </Text>
+                )}
+                {grp.entries.map((x, n) => (
+                  <div key={n} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: t.space.sm }}>
+                    {tagOf(x) && <StatusPill size="sm" color={tagOf(x)!.tone}>{tagOf(x)!.tag}</StatusPill>}
+                    <Text size="small" color="secondary">{x.title}</Text>
+                    {/* Entries about one part of the course share the line below. The others say what to do themselves. */}
+                    {!grp.content && x.detail && <Text as="div" size="small" color="secondary">{x.detail}</Text>}
                   </div>
-                  {/* An item that has a preview is a link to it. The others stay as text. */}
-                  {grp.content && (
-                    <Text as="div" size="small" color="secondary">
-                      {previewItemOf(grp.content) ? (
-                        <>
-                          <Link as="button" onClick={() => setOpenItem(previewItemOf(grp.content))}>{grp.content.split(', in ')[0]}</Link>
-                          {grp.content.includes(', in ') && `, in ${grp.content.split(', in ').slice(1).join(', in ')}`}
-                        </>
-                      ) : (
-                        grp.content
-                      )}
-                    </Text>
-                  )}
-                </li>
-              ))}
-            </ul>
+                ))}
+              </div>
+            ))}
           </section>
         )
       })}
